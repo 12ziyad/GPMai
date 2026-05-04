@@ -1,0 +1,88 @@
+name: gpmai_clean
+description: "A clean GPMai orb app"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.7.2 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # ✅ Firebase (Auth Phase 1)
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.1
+
+  # Voice & NLP
+  speech_to_text: ^7.0.0
+  flutter_tts: ^4.2.3
+  http: ^1.2.0
+
+  # Permissions & UI
+  permission_handler: ^12.0.1
+  lottie: ^3.3.1
+  flutter_markdown: ^0.7.7+1
+
+  # Vision / OCR (keep if you use OCR space)
+  google_mlkit_text_recognition: ^0.15.0
+
+  # Local storage
+  path_provider: ^2.1.5
+
+  # DB
+  intl: ^0.20.2
+  drift: ^2.28.1
+  drift_flutter: ^0.2.5
+  sqlite3_flutter_libs: ^0.5.39
+
+  # Share / launch
+  share_plus: ^12.0.1
+  url_launcher: ^6.3.2
+
+  # File & image pickers + doc parsing
+  image_picker: ^1.1.2
+  file_picker: ^10.3.2
+  syncfusion_flutter_pdf: ^30.2.7
+  archive: ^4.0.7
+  xml: ^6.5.0
+
+  # Cropper
+  image_cropper: ^9.1.0
+
+  # PDF export (if you still use it elsewhere)
+  pdf: ^3.10.7
+
+  # Viewer upgraded to match intl ^0.20.x
+  syncfusion_flutter_pdfviewer: ^30.2.7
+
+  webview_flutter: ^4.8.0
+  youtube_player_iframe: ^4.0.4
+  shared_preferences: ^2.2.3
+  audioplayers: ^6.6.0
+  video_player: ^2.11.1
+  record: ^6.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  drift_dev: ^2.28.1
+  build_runner: ^2.7.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
+    - assets/ai_orb.png
+    - assets/orb_closed.png
+    - assets/orb_cold.png
+    - assets/orb_dead.png
+    - assets/orb_fire.png
+    - assets/orb_gold.png
+    - assets/orb_light.png
+    - assets/orb_love.png
+    - assets/orb_rblinked.png
+    - assets/orb_sleep.png
+    - assets/orb_sparks.png

@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Electric-blue / black / white chat bubble, with multiline input (max 3 lines) -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/chat_root"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="0dp"
+    android:background="@android:color/transparent"
+    android:elevation="12dp">
+
+    <!-- Chat bubble container -->
+    <LinearLayout
+        android:id="@+id/chat_bubble"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp"
+        android:background="@drawable/chat_bubble_bg_dark"
+        android:layout_margin="10dp">
+
+        <!-- Header row (drag handle) with X button aligned top-right -->
+        <LinearLayout
+            android:id="@+id/chat_header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="end"
+            android:paddingBottom="2dp">
+
+            <ImageButton
+                android:id="@+id/close_chat"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:background="@android:color/transparent"
+                android:padding="4dp"
+                android:tint="#FFFFFF"
+                android:contentDescription="Close chat"
+                android:src="@drawable/ic_close_white" />
+        </LinearLayout>
+
+        <!-- User message (collapsed by default) -->
+        <TextView
+            android:id="@+id/user_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#00B8FF"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:paddingTop="2dp"
+            android:paddingBottom="4dp"
+            android:visibility="gone" />
+
+        <!-- AI response + speaker button row -->
+        <LinearLayout
+            android:id="@+id/ai_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/gpmai_response"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:lineSpacingExtra="4dp"
+                android:paddingBottom="8dp"
+                android:maxLines="8"
+                android:ellipsize="end"
+                android:visibility="gone" />
+
+            <ImageButton
+                android:id="@+id/tts_toggle"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="6dp"
+                android:background="@android:color/transparent"
+                android:padding="4dp"
+                android:tint="#FFFFFF"
+                android:contentDescription="Play or stop voice"
+                android:src="@android:drawable/ic_lock_silent_mode_off" />
+        </LinearLayout>
+
+        <!-- Input + Send -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="bottom">
+
+            <EditText
+                android:id="@+id/message_input"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Message GPMai…"
+                android:textColorHint="#88FFFFFF"
+                android:textColor="#FFFFFF"
+                android:inputType="textCapSentences|textMultiLine"
+                android:imeOptions="actionSend"
+                android:minLines="1"
+                android:maxLines="3"
+                android:scrollbars="vertical"
+                android:overScrollMode="ifContentScrolls"
+                android:gravity="top|start"
+                android:padding="10dp"
+                android:background="@drawable/input_bg" />
+
+            <Button
+                android:id="@+id/send_button"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:minWidth="88dp"
+                android:layout_marginStart="8dp"
+                android:text="SEND"
+                android:textAllCaps="true"
+                android:textColor="#FFFFFF"
+                android:paddingLeft="16dp"
+                android:paddingRight="16dp"
+                android:background="@drawable/send_button_bg" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

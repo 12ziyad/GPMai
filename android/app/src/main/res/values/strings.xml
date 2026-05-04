@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">GPMai</string>
+
+    <!-- Accessibility service text -->
+    <string name="gpmai_accessibility_summary">Assistive controls &amp; on‑request screen reading</string>
+    <string name="gpmai_accessibility_desc">
+        GPMai helps with on‑screen navigation and reads visible text only when you ask.
+        It does not run continuous background capture.
+    </string>
+</resources>

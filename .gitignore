@@ -1,0 +1,74 @@
+# Flutter build
+build/
+**/build/
+.android/
+.ios/
+.melos/
+.dart_tool/
+.packages
+.pub-cache/
+pubspec.lock
+
+# Android/iOS
+android/app/build/
+ios/Pods/
+*.apk
+*.aab
+
+# Misc
+.DS_Store
+*.iml
+.idea/
+.vscode/
+
+# FVM Version Cache
+.fvm/
+# Ignore large packs
+*.zip
+GPMai/*.zip
+
+
+# Local secrets
+.env
+.dev.vars
+*.local
+
+# Cloudflare
+.wrangler/
+
+# Node / build
+node_modules/
+dist/
+build/
+*.log
+
+# Firebase / private keys
+firebase-service-account*.json
+service-account*.json
+*.pem
+*.key
+
+# Local secrets
+.env
+.dev.vars
+*.local
+
+# Cloudflare
+.wrangler/
+
+# Node / build
+node_modules/
+dist/
+build/
+*.log
+
+# Firebase / private keys
+firebase-service-account*.json
+service-account*.json
+*.pem
+*.key
+
+# Firebase client config - use your own project values
+android/app/google-services.json
+android/app/google-services.json.json
+ios/Runner/GoogleService-Info.plist

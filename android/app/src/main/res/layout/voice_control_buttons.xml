@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:background="@android:color/transparent"
+    android:padding="4dp">
+
+    <ImageButton
+        android:id="@+id/btn_pause"
+        android:layout_width="45dp"
+        android:layout_height="45dp"
+        android:backgroundTint="#FFFFFF"
+        android:tint="#2196F3"
+        android:src="@android:drawable/ic_media_pause"
+        android:background="@android:color/transparent"
+        android:contentDescription="Pause TTS" />
+
+    <ImageButton
+        android:id="@+id/btn_resume"
+        android:layout_width="45dp"
+        android:layout_height="45dp"
+        android:backgroundTint="#FFFFFF"
+        android:tint="#2196F3"
+        android:src="@android:drawable/ic_media_play"
+        android:background="@android:color/transparent"
+        android:contentDescription="Resume TTS" />
+
+    <ImageButton
+        android:id="@+id/btn_stop"
+        android:layout_width="45dp"
+        android:layout_height="45dp"
+        android:backgroundTint="#FFFFFF"
+        android:tint="#F44336"
+        android:src="@android:drawable/ic_menu_close_clear_cancel"
+        android:background="@android:color/transparent"
+        android:contentDescription="Stop TTS" />
+</LinearLayout>

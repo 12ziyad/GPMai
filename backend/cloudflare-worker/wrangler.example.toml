@@ -1,0 +1,14 @@
+name = "gpmai-api"
+main = "worker.js"
+compatibility_date = "2026-05-01"
+
+[vars]
+FIREBASE_PROJECT_ID = "your_firebase_project_id_here"
+
+# Real secrets are NOT stored in this file.
+# Add them in Cloudflare dashboard or using:
+# wrangler secret put APP_SECRET
+# wrangler secret put FIREBASE_SERVICE_ACCOUNT_JSON
+# wrangler secret put OPENAI_API_KEY
+# wrangler secret put OPENROUTER_API_KEY
+# wrangler secret put REPLICATE_API_TOKEN
