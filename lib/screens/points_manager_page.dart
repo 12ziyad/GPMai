@@ -93,23 +93,25 @@ class _PointsManagerPageState extends State<PointsManagerPage>
       final weekSeries = (daily["series"] as List?) ?? const [];
       final monthSeries = (monthly["series"] as List?) ?? const [];
 
-      final weekPts = weekSeries.map((e) {
-        final m = (e as Map).cast<String, dynamic>();
-        return _SeriesPoint(
-          key: (m["dayKey"] ?? "").toString(),
-          points: (m["pointsSpent"] ?? 0).toDouble(),
-          requests: int.tryParse("${m["requests"] ?? 0}") ?? 0,
-        );
-      }).toList();
+      final weekPts =
+          weekSeries.map((e) {
+            final m = (e as Map).cast<String, dynamic>();
+            return _SeriesPoint(
+              key: (m["dayKey"] ?? "").toString(),
+              points: (m["pointsSpent"] ?? 0).toDouble(),
+              requests: int.tryParse("${m["requests"] ?? 0}") ?? 0,
+            );
+          }).toList();
 
-      final monthPts = monthSeries.map((e) {
-        final m = (e as Map).cast<String, dynamic>();
-        return _SeriesPoint(
-          key: (m["monthKey"] ?? "").toString(),
-          points: (m["pointsSpent"] ?? 0).toDouble(),
-          requests: int.tryParse("${m["requests"] ?? 0}") ?? 0,
-        );
-      }).toList();
+      final monthPts =
+          monthSeries.map((e) {
+            final m = (e as Map).cast<String, dynamic>();
+            return _SeriesPoint(
+              key: (m["monthKey"] ?? "").toString(),
+              points: (m["pointsSpent"] ?? 0).toDouble(),
+              requests: int.tryParse("${m["requests"] ?? 0}") ?? 0,
+            );
+          }).toList();
 
       setState(() {
         _me = me;
@@ -133,17 +135,20 @@ class _PointsManagerPageState extends State<PointsManagerPage>
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    final wallet = (_me?["wallet"] is Map)
-        ? (_me!["wallet"] as Map).cast<String, dynamic>()
-        : null;
+    final wallet =
+        (_me?["wallet"] is Map)
+            ? (_me!["wallet"] as Map).cast<String, dynamic>()
+            : null;
 
-    final usage = (_me?["usage"] is Map)
-        ? (_me!["usage"] as Map).cast<String, dynamic>()
-        : null;
+    final usage =
+        (_me?["usage"] is Map)
+            ? (_me!["usage"] as Map).cast<String, dynamic>()
+            : null;
 
-    final today = (usage?["today"] is Map)
-        ? (usage!["today"] as Map).cast<String, dynamic>()
-        : null;
+    final today =
+        (usage?["today"] is Map)
+            ? (usage!["today"] as Map).cast<String, dynamic>()
+            : null;
 
     final pointsBalance = _asInt(wallet?["pointsBalance"]);
     final bankCap = _asInt(wallet?["bankCap"]);
@@ -178,7 +183,7 @@ class _PointsManagerPageState extends State<PointsManagerPage>
             tooltip: "Refresh",
             onPressed: () => _load(),
             icon: const Icon(Icons.refresh_rounded),
-          )
+          ),
         ],
       ),
       body: RefreshIndicator(
@@ -201,7 +206,10 @@ class _PointsManagerPageState extends State<PointsManagerPage>
                         ),
                       ),
                       const Spacer(),
-                      Icon(Icons.account_balance_wallet_outlined, color: cs.primary),
+                      Icon(
+                        Icons.account_balance_wallet_outlined,
+                        color: cs.primary,
+                      ),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -249,24 +257,37 @@ class _PointsManagerPageState extends State<PointsManagerPage>
                   const SizedBox(height: 12),
 
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: canStart ? Colors.green.withOpacity(.35) : Colors.red.withOpacity(.35),
+                        color:
+                            canStart
+                                ? Colors.green.withOpacity(.35)
+                                : Colors.red.withOpacity(.35),
                       ),
-                      color: canStart ? Colors.green.withOpacity(.08) : Colors.red.withOpacity(.08),
+                      color:
+                          canStart
+                              ? Colors.green.withOpacity(.08)
+                              : Colors.red.withOpacity(.08),
                     ),
                     child: Row(
                       children: [
                         Icon(
-                          canStart ? Icons.verified_rounded : Icons.warning_amber_rounded,
+                          canStart
+                              ? Icons.verified_rounded
+                              : Icons.warning_amber_rounded,
                           color: canStart ? Colors.green : Colors.red,
                         ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            canStart ? "OK to start (≥ $minGate)" : "LOW — need at least $minGate to start",
+                            canStart
+                                ? "OK to start (≥ $minGate)"
+                                : "LOW — need at least $minGate to start",
                             style: TextStyle(
                               fontWeight: FontWeight.w900,
                               color: canStart ? Colors.green : Colors.red,
@@ -333,7 +354,9 @@ class _PointsManagerPageState extends State<PointsManagerPage>
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    _mode == _RangeMode.week ? "Weekly (last 7 days)" : "Monthly (last 6 months)",
+                    _mode == _RangeMode.week
+                        ? "Weekly (last 7 days)"
+                        : "Monthly (last 6 months)",
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
                       color: cs.onSurface.withOpacity(.75),
@@ -355,12 +378,37 @@ class _PointsManagerPageState extends State<PointsManagerPage>
             if (_error != null) ...[
               const SizedBox(height: 18),
               _CardBox(
-                child: Text(
-                  _error!,
-                  style: TextStyle(
-                    color: cs.error,
-                    fontWeight: FontWeight.w700,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.cloud_off_rounded,
+                      size: 32,
+                      color: cs.onSurface.withOpacity(.5),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      _error!.contains('401') ||
+                              _error!.contains('Unauthorized') ||
+                              _error!.contains('missing token')
+                          ? 'Sign in or connect backend to sync points.'
+                          : _error!.contains('timeout') ||
+                              _error!.contains('SocketException')
+                          ? 'Backend connection required. Check your network.'
+                          : 'Could not load points. Tap refresh to try again.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: cs.onSurface.withOpacity(.8),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextButton.icon(
+                      onPressed: _load,
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('Retry'),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -525,9 +573,17 @@ class _ModePills extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        pill("Weekly", mode == _RangeMode.week, () => onChange(_RangeMode.week)),
+        pill(
+          "Weekly",
+          mode == _RangeMode.week,
+          () => onChange(_RangeMode.week),
+        ),
         const SizedBox(width: 8),
-        pill("Monthly", mode == _RangeMode.month, () => onChange(_RangeMode.month)),
+        pill(
+          "Monthly",
+          mode == _RangeMode.month,
+          () => onChange(_RangeMode.month),
+        ),
       ],
     );
   }
@@ -536,7 +592,20 @@ class _ModePills extends StatelessWidget {
 /* ---------------- Date formatting ---------------- */
 
 const _weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const _months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const _months = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
 
 String _prettyDay(String yyyyMmDd) {
   final dt = DateTime.tryParse(yyyyMmDd);
@@ -559,10 +628,7 @@ class _InteractiveLineChart extends StatefulWidget {
   final List<_SeriesPoint> points;
   final _RangeMode mode;
 
-  const _InteractiveLineChart({
-    required this.points,
-    required this.mode,
-  });
+  const _InteractiveLineChart({required this.points, required this.mode});
 
   @override
   State<_InteractiveLineChart> createState() => _InteractiveLineChartState();
@@ -594,7 +660,9 @@ class _InteractiveLineChartState extends State<_InteractiveLineChart> {
   }
 
   String _label(String key) {
-    return widget.mode == _RangeMode.month ? _prettyMonth(key) : _prettyDay(key);
+    return widget.mode == _RangeMode.month
+        ? _prettyMonth(key)
+        : _prettyDay(key);
   }
 
   @override
@@ -625,7 +693,10 @@ class _InteractiveLineChartState extends State<_InteractiveLineChart> {
         final w = c.maxWidth;
         final h = 210.0;
 
-        final safeSel = (_selectedIndex ?? (pts.length - 1)).clamp(0, pts.length - 1);
+        final safeSel = (_selectedIndex ?? (pts.length - 1)).clamp(
+          0,
+          pts.length - 1,
+        );
         final selected = pts[safeSel];
 
         return SizedBox(
@@ -664,7 +735,10 @@ class _InteractiveLineChartState extends State<_InteractiveLineChart> {
                 child: Align(
                   alignment: Alignment.topLeft,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: cs.primary.withOpacity(.10),
                       borderRadius: BorderRadius.circular(14),
@@ -737,9 +811,10 @@ class _LineChartPainter extends CustomPainter {
     final chartH = h - topPad - bottomPad;
     final chartW = w - leftPad - rightPad;
 
-    final axisPaint = Paint()
-      ..color = axisColor
-      ..strokeWidth = 1;
+    final axisPaint =
+        Paint()
+          ..color = axisColor
+          ..strokeWidth = 1;
 
     canvas.drawLine(
       Offset(leftPad, topPad + chartH),
@@ -752,11 +827,12 @@ class _LineChartPainter extends CustomPainter {
 
     final path = Path();
     final dotPaint = Paint()..color = color;
-    final linePaint = Paint()
-      ..color = color.withOpacity(.9)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round;
+    final linePaint =
+        Paint()
+          ..color = color.withOpacity(.9)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 3
+          ..strokeCap = StrokeCap.round;
 
     final xy = <Offset>[];
     for (int i = 0; i < count; i++) {
@@ -774,14 +850,16 @@ class _LineChartPainter extends CustomPainter {
       }
     }
 
-    final fillPath = Path.from(path)
-      ..lineTo(leftPad + chartW, topPad + chartH)
-      ..lineTo(leftPad, topPad + chartH)
-      ..close();
+    final fillPath =
+        Path.from(path)
+          ..lineTo(leftPad + chartW, topPad + chartH)
+          ..lineTo(leftPad, topPad + chartH)
+          ..close();
 
-    final fillPaint = Paint()
-      ..color = color.withOpacity(.10)
-      ..style = PaintingStyle.fill;
+    final fillPaint =
+        Paint()
+          ..color = color.withOpacity(.10)
+          ..style = PaintingStyle.fill;
 
     canvas.drawPath(fillPath, fillPaint);
     canvas.drawPath(path, linePaint);
@@ -791,9 +869,10 @@ class _LineChartPainter extends CustomPainter {
     }
 
     final p = xy[selectedIndex];
-    final vPaint = Paint()
-      ..color = color.withOpacity(.35)
-      ..strokeWidth = 2;
+    final vPaint =
+        Paint()
+          ..color = color.withOpacity(.35)
+          ..strokeWidth = 2;
 
     canvas.drawLine(
       Offset(p.dx, topPad),
@@ -850,7 +929,8 @@ class _UsageSummary extends StatelessWidget {
     }
 
     final avg = total / points.length;
-    final peakLabel = mode == _RangeMode.month ? _prettyMonth(peakKey) : _prettyDay(peakKey);
+    final peakLabel =
+        mode == _RangeMode.month ? _prettyMonth(peakKey) : _prettyDay(peakKey);
 
     return Container(
       padding: const EdgeInsets.all(12),

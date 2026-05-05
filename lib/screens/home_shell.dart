@@ -6,9 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:gpmai_clean/prompts/bots_prompts.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
-
 import '../services/sql_chat_store.dart';
 import 'chat_page.dart';
 import 'explore_page.dart';
@@ -47,9 +44,6 @@ import '../spaces/video_generator_page.dart';
 import '../spaces/audio_generator_page.dart';
 
 // Settings pages
-import '../settings/faq_page.dart';
-import '../settings/terms_of_use_page.dart';
-import '../settings/privacy_policy_page.dart';
 import 'points_manager_page.dart';
 import 'memory_hub_page.dart';
 import '../services/memory_session.dart';
@@ -98,7 +92,7 @@ class OrbBridge {
     await _tryAll<void>([
       'ensureOverlayPermission',
       'requestOverlayPermission',
-      'openOverlaySettings'
+      'openOverlaySettings',
     ]);
   }
 
@@ -143,7 +137,8 @@ class HomeShell extends StatefulWidget {
 
 enum HomeTab { aiModels, explore, aiLab, inbox }
 
-class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMixin {
+class _HomeShellState extends State<HomeShell>
+    with SingleTickerProviderStateMixin {
   HomeTab _tab = HomeTab.aiModels;
   bool _profileOpen = false;
   bool _floatingOrbRunning = false;
@@ -166,9 +161,10 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
       final prefs = await SharedPreferences.getInstance();
       final s = prefs.getString(_prefsThemeKey);
       if (s == null) return;
-      final mode = s == 'light'
-          ? ThemeMode.light
-          : s == 'dark'
+      final mode =
+          s == 'light'
+              ? ThemeMode.light
+              : s == 'dark'
               ? ThemeMode.dark
               : ThemeMode.system;
       widget.onChangeTheme?.call(mode);
@@ -194,7 +190,11 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(
         _prefsThemeKey,
-        m == ThemeMode.light ? 'light' : m == ThemeMode.dark ? 'dark' : 'system',
+        m == ThemeMode.light
+            ? 'light'
+            : m == ThemeMode.dark
+            ? 'dark'
+            : 'system',
       );
     } catch (_) {}
   }
@@ -210,8 +210,11 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
       if (mounted) setState(() => _floatingOrbRunning = running);
     } catch (_) {}
 
-    ThemeMode selected = widget.currentThemeMode ??
-        (Theme.of(context).brightness == Brightness.light ? ThemeMode.light : ThemeMode.dark);
+    ThemeMode selected =
+        widget.currentThemeMode ??
+        (Theme.of(context).brightness == Brightness.light
+            ? ThemeMode.light
+            : ThemeMode.dark);
 
     await showModalBottomSheet<void>(
       context: context,
@@ -226,23 +229,24 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
         final h = MediaQuery.of(ctx).size.height * 0.9;
         return StatefulBuilder(
           builder: (ctx, setLocal) {
-            final ThemeData sheetTheme = selected == ThemeMode.light
-                ? ThemeData.light().copyWith(
-                    scaffoldBackgroundColor: Colors.white,
-                    cardColor: Colors.white,
-                    colorScheme: const ColorScheme.light(
-                      primary: Color(0xFF00B8FF),
-                      secondary: Color(0xFF00B8FF),
-                    ),
-                  )
-                : ThemeData.dark().copyWith(
-                    scaffoldBackgroundColor: const Color(0xFF0D0F12),
-                    cardColor: const Color(0xFF12151A),
-                    colorScheme: const ColorScheme.dark(
-                      primary: Color(0xFF00B8FF),
-                      secondary: Color(0xFF00B8FF),
-                    ),
-                  );
+            final ThemeData sheetTheme =
+                selected == ThemeMode.light
+                    ? ThemeData.light().copyWith(
+                      scaffoldBackgroundColor: Colors.white,
+                      cardColor: Colors.white,
+                      colorScheme: const ColorScheme.light(
+                        primary: Color(0xFF00B8FF),
+                        secondary: Color(0xFF00B8FF),
+                      ),
+                    )
+                    : ThemeData.dark().copyWith(
+                      scaffoldBackgroundColor: const Color(0xFF0D0F12),
+                      cardColor: const Color(0xFF12151A),
+                      colorScheme: const ColorScheme.dark(
+                        primary: Color(0xFF00B8FF),
+                        secondary: Color(0xFF00B8FF),
+                      ),
+                    );
 
             return Theme(
               data: sheetTheme,
@@ -250,7 +254,9 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
                 height: h,
                 decoration: BoxDecoration(
                   color: sheetTheme.scaffoldBackgroundColor,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(28),
+                  ),
                 ),
                 child: _ThemeChooser(
                   selected: selected,
@@ -261,7 +267,8 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
                     if (mounted) setState(() {});
                   },
                   initialFloatingOrb: _floatingOrbRunning,
-                  onToggleFloatingOrb: (v) => setState(() => _floatingOrbRunning = v),
+                  onToggleFloatingOrb:
+                      (v) => setState(() => _floatingOrbRunning = v),
                 ),
               ),
             );
@@ -276,40 +283,86 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
   void _onExploreToolTap(String id) {
     switch (id) {
       case 'upload_ask':
-        Navigator.push(context, MaterialPageRoute(builder: (_) => UploadAskPage(userId: widget.userId)));
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => UploadAskPage(userId: widget.userId),
+          ),
+        );
         break;
       case 'solve_math':
-        Navigator.push(context, MaterialPageRoute(builder: (_) => SolveMathPage(userId: widget.userId)));
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => SolveMathPage(userId: widget.userId),
+          ),
+        );
         break;
       case 'homework':
-        Navigator.push(context, MaterialPageRoute(builder: (_) => HomeworkTutorPage(userId: widget.userId)));
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => HomeworkTutorPage(userId: widget.userId),
+          ),
+        );
         break;
       case 'pdf_summary':
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const PdfSummaryHomePage()));
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const PdfSummaryHomePage()),
+        );
         break;
       case 'email_writer':
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const EmailWriterPage()));
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const EmailWriterPage()),
+        );
         break;
       case 'deepsearch':
-        Navigator.push(context, MaterialPageRoute(builder: (_) => DeepSearchPage(userId: widget.userId)));
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => DeepSearchPage(userId: widget.userId),
+          ),
+        );
         break;
       case 'ocr':
-        Navigator.push(context, MaterialPageRoute(builder: (_) => OcrPage(userId: widget.userId)));
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => OcrPage(userId: widget.userId)),
+        );
         break;
       case 'ask_url':
-        Navigator.push(context, MaterialPageRoute(builder: (_) => AskUrlPage(userId: widget.userId)));
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => AskUrlPage(userId: widget.userId)),
+        );
         break;
       case 'yt_summary':
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const YTSummaryHomePage()));
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const YTSummaryHomePage()),
+        );
         break;
       case 'grammar':
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const GrammarCheckPage()));
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const GrammarCheckPage()),
+        );
         break;
       case 'translation':
-        Navigator.push(context, MaterialPageRoute(builder: (_) => AiTranslationPage(userId: widget.userId)));
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AiTranslationPage(userId: widget.userId),
+          ),
+        );
         break;
       case 'travel_tool':
-        Navigator.push(context, MaterialPageRoute(builder: (_) => TravelPage(userId: widget.userId)));
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => TravelPage(userId: widget.userId)),
+        );
         break;
       default:
         final title = _titleForTool(id);
@@ -317,22 +370,29 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
     }
   }
 
-  Future<void> _openToolAsChat({required String toolId, required String title}) async {
+  Future<void> _openToolAsChat({
+    required String toolId,
+    required String title,
+  }) async {
     final store = SqlChatStore();
-    final chatId = await store.createChat(name: title, preset: {'kind': 'tool', 'id': toolId});
+    final chatId = await store.createChat(
+      name: title,
+      preset: {'kind': 'tool', 'id': toolId},
+    );
     if (!mounted) return;
     Navigator.of(context).push(
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 280),
-        pageBuilder: (_, a1, __) => FadeTransition(
-          opacity: a1,
-          child: ChatPage(
-            userId: widget.userId,
-            chatId: chatId,
-            chatName: title,
-            systemPrompt: _systemPromptForTool(toolId),
-          ),
-        ),
+        pageBuilder:
+            (_, a1, __) => FadeTransition(
+              opacity: a1,
+              child: ChatPage(
+                userId: widget.userId,
+                chatId: chatId,
+                chatName: title,
+                systemPrompt: _systemPromptForTool(toolId),
+              ),
+            ),
       ),
     );
   }
@@ -449,19 +509,32 @@ Rules:
       ),
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 240),
-        transitionBuilder: (c, a) => SlideTransition(
-          position: Tween(begin: const Offset(0.05, 0), end: Offset.zero).animate(a),
-          child: FadeTransition(opacity: a, child: c),
-        ),
-        child: switch (_tab) {
-          HomeTab.aiModels => _AiHomePane(key: const ValueKey('ai_home'), userId: widget.userId),
-          HomeTab.explore => ExplorePage(
-              key: const ValueKey('explore'),
-              onTapCategory: (id) {},
-              onTapTool: _onExploreToolTap,
+        transitionBuilder:
+            (c, a) => SlideTransition(
+              position: Tween(
+                begin: const Offset(0.05, 0),
+                end: Offset.zero,
+              ).animate(a),
+              child: FadeTransition(opacity: a, child: c),
             ),
-          HomeTab.aiLab => AILabPage(key: const ValueKey('ai_lab'), userId: widget.userId),
-          HomeTab.inbox => _InboxPane(key: const ValueKey('inbox'), userId: widget.userId),
+        child: switch (_tab) {
+          HomeTab.aiModels => _AiHomePane(
+            key: const ValueKey('ai_home'),
+            userId: widget.userId,
+          ),
+          HomeTab.explore => ExplorePage(
+            key: const ValueKey('explore'),
+            onTapCategory: (id) {},
+            onTapTool: _onExploreToolTap,
+          ),
+          HomeTab.aiLab => AILabPage(
+            key: const ValueKey('ai_lab'),
+            userId: widget.userId,
+          ),
+          HomeTab.inbox => _InboxPane(
+            key: const ValueKey('inbox'),
+            userId: widget.userId,
+          ),
         },
       ),
       bottomNavigationBar: SafeArea(
@@ -537,8 +610,6 @@ class _ThemeChooser extends StatefulWidget {
 }
 
 class _ThemeChooserState extends State<_ThemeChooser> {
-  static const String _feedbackEmail = 'gpmai.app@gmail.com';
-
   late ThemeMode _picked;
   late bool _floatingOrbVisible;
   bool _startingOrb = false;
@@ -561,8 +632,13 @@ class _ThemeChooserState extends State<_ThemeChooser> {
         await OrbBridge.start();
         await Future.delayed(const Duration(milliseconds: 900));
         if (!mounted) return;
-        setState(() => _startingOrb = false);
-        widget.onToggleFloatingOrb(true);
+        final nowRunning = await OrbBridge.isRunning();
+        if (!mounted) return;
+        setState(() {
+          _startingOrb = false;
+          _floatingOrbVisible = nowRunning;
+        });
+        widget.onToggleFloatingOrb(nowRunning);
       } catch (_) {
         if (!mounted) return;
         setState(() {
@@ -570,7 +646,11 @@ class _ThemeChooserState extends State<_ThemeChooser> {
           _floatingOrbVisible = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not start Orb. Check overlay permission & channel names.')),
+          const SnackBar(
+            content: Text(
+              'Could not start Orb. Check overlay permission & channel names.',
+            ),
+          ),
         );
       }
     } else {
@@ -578,22 +658,12 @@ class _ThemeChooserState extends State<_ThemeChooser> {
       try {
         await OrbBridge.stop();
       } catch (_) {}
-      widget.onToggleFloatingOrb(false);
-    }
-  }
-
-  Future<void> _shareApp() async {
-    await Share.share('Try GPMai â€“ my AI companion.\nhttps://example.com');
-  }
-
-  Future<void> _openMail({required String to, required String subject}) async {
-    final uri = Uri(
-      scheme: 'mailto',
-      path: to,
-      queryParameters: {'subject': subject},
-    );
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not open email app.')));
+      await Future.delayed(const Duration(milliseconds: 400));
+      if (!mounted) return;
+      final nowRunning = await OrbBridge.isRunning();
+      if (!mounted) return;
+      setState(() => _floatingOrbVisible = nowRunning);
+      widget.onToggleFloatingOrb(nowRunning);
     }
   }
 
@@ -602,9 +672,14 @@ class _ThemeChooserState extends State<_ThemeChooser> {
     final isLight = Theme.of(context).brightness == Brightness.light;
     final cs = Theme.of(context).colorScheme;
 
-    Widget card({required bool light, required bool active, required VoidCallback onTap}) {
+    Widget card({
+      required bool light,
+      required bool active,
+      required VoidCallback onTap,
+    }) {
       final bg = light ? Colors.white : const Color(0xFF151920);
-      final border = active ? cs.primary : (isLight ? Colors.black12 : Colors.white12);
+      final border =
+          active ? cs.primary : (isLight ? Colors.black12 : Colors.white12);
       final icon = light ? Icons.wb_sunny_rounded : Icons.nightlight_round;
 
       return Expanded(
@@ -630,24 +705,42 @@ class _ThemeChooserState extends State<_ThemeChooser> {
       );
     }
 
-    Widget radioPill({required String label, required bool active, required VoidCallback onTap}) {
+    Widget radioPill({
+      required String label,
+      required bool active,
+      required VoidCallback onTap,
+    }) {
       return InkWell(
         borderRadius: BorderRadius.circular(18),
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: active ? cs.primary.withOpacity(.18) : (isLight ? Colors.black12 : Colors.white10),
+            color:
+                active
+                    ? cs.primary.withOpacity(.18)
+                    : (isLight ? Colors.black12 : Colors.white10),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: active ? cs.primary : (isLight ? Colors.black26 : Colors.white24), width: 2),
+            border: Border.all(
+              color:
+                  active
+                      ? cs.primary
+                      : (isLight ? Colors.black26 : Colors.white24),
+              width: 2,
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                active ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
+                active
+                    ? Icons.radio_button_checked_rounded
+                    : Icons.radio_button_off_rounded,
                 size: 18,
-                color: active ? cs.primary : (isLight ? Colors.black54 : Colors.white54),
+                color:
+                    active
+                        ? cs.primary
+                        : (isLight ? Colors.black54 : Colors.white54),
               ),
               const SizedBox(width: 8),
               Text(
@@ -664,10 +757,13 @@ class _ThemeChooserState extends State<_ThemeChooser> {
     }
 
     BoxDecoration sectionBox() => BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          color: isLight ? Colors.black.withOpacity(.04) : Colors.white.withOpacity(.04),
-          border: Border.all(color: isLight ? Colors.black12 : Colors.white12),
-        );
+      borderRadius: BorderRadius.circular(16),
+      color:
+          isLight
+              ? Colors.black.withOpacity(.04)
+              : Colors.white.withOpacity(.04),
+      border: Border.all(color: isLight ? Colors.black12 : Colors.white12),
+    );
 
     return SafeArea(
       bottom: true,
@@ -690,7 +786,10 @@ class _ThemeChooserState extends State<_ThemeChooser> {
               padding: EdgeInsets.symmetric(horizontal: 16),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: Text("Appearance", style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+                child: Text(
+                  "Appearance",
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+                ),
               ),
             ),
             const SizedBox(height: 14),
@@ -745,7 +844,10 @@ class _ThemeChooserState extends State<_ThemeChooser> {
               padding: EdgeInsets.symmetric(horizontal: 16),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: Text("Orb", style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+                child: Text(
+                  "Orb",
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+                ),
               ),
             ),
             const SizedBox(height: 10),
@@ -756,7 +858,9 @@ class _ThemeChooserState extends State<_ThemeChooser> {
                 child: ListTile(
                   title: const Text("Orb"),
                   subtitle: Text(
-                    _floatingOrbVisible ? "Floating orb overlay is ON" : "Floating orb overlay is OFF",
+                    _floatingOrbVisible
+                        ? "Floating orb overlay is ON"
+                        : "Floating orb overlay is OFF",
                   ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -784,7 +888,10 @@ class _ThemeChooserState extends State<_ThemeChooser> {
               padding: EdgeInsets.symmetric(horizontal: 16),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: Text("AI Memory", style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+                child: Text(
+                  "AI Memory",
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+                ),
               ),
             ),
             const SizedBox(height: 10),
@@ -794,30 +901,46 @@ class _ThemeChooserState extends State<_ThemeChooser> {
                 decoration: sectionBox(),
                 child: ValueListenableBuilder<String>(
                   valueListenable: MemorySession.activeModeNotifier,
-                  builder: (context, activeMode, _) => ListTile(
-                    leading: const Icon(Icons.account_tree_rounded),
-                    title: const Text('Memory Profiles & Brain Graph'),
-                    subtitle: Text('Active mode: ${MemorySession.modeLabel(activeMode)}'),
-                    trailing: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary.withOpacity(.12),
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(.2)),
-                      ),
-                      child: Text(
-                        MemorySession.modeLabel(activeMode),
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12,
+                  builder:
+                      (context, activeMode, _) => ListTile(
+                        leading: const Icon(Icons.account_tree_rounded),
+                        title: const Text('Memory Profiles & Brain Graph'),
+                        subtitle: Text(
+                          'Active mode: ${MemorySession.modeLabel(activeMode)}',
                         ),
+                        trailing: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.primary.withOpacity(.12),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.primary.withOpacity(.2),
+                            ),
+                          ),
+                          child: Text(
+                            MemorySession.modeLabel(activeMode),
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const MemoryHubPage(),
+                            ),
+                          );
+                        },
                       ),
-                    ),
-                    onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MemoryHubPage()));
-                    },
-                  ),
                 ),
               ),
             ),
@@ -826,7 +949,10 @@ class _ThemeChooserState extends State<_ThemeChooser> {
               padding: EdgeInsets.symmetric(horizontal: 16),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: Text("Wallet", style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+                child: Text(
+                  "Wallet",
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+                ),
               ),
             ),
             const SizedBox(height: 10),
@@ -837,73 +963,19 @@ class _ThemeChooserState extends State<_ThemeChooser> {
                 child: Column(
                   children: [
                     ListTile(
-                      leading: const Icon(Icons.account_balance_wallet_outlined),
+                      leading: const Icon(
+                        Icons.account_balance_wallet_outlined,
+                      ),
                       title: const Text("Points Manager"),
                       subtitle: const Text("Weekly + monthly usage graphs"),
                       onTap: () {
                         Navigator.of(context).pop();
                         Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const PointsManagerPage()),
+                          MaterialPageRoute(
+                            builder: (_) => const PointsManagerPage(),
+                          ),
                         );
                       },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 22),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text("Support & Legal", style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Container(
-                decoration: sectionBox(),
-                child: Column(
-                  children: [
-                    ListTile(
-                      leading: const Icon(Icons.help_outline_rounded),
-                      title: const Text('FAQ'),
-                      onTap: () {
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const FaqPage()));
-                      },
-                    ),
-                    const Divider(height: 1),
-                    ListTile(
-                      leading: const Icon(Icons.description_outlined),
-                      title: const Text('Terms of Use'),
-                      onTap: () {
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const TermsOfUsePage()));
-                      },
-                    ),
-                    const Divider(height: 1),
-                    ListTile(
-                      leading: const Icon(Icons.privacy_tip_outlined),
-                      title: const Text('Privacy Policy'),
-                      onTap: () {
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PrivacyPolicyPage()));
-                      },
-                    ),
-                    const Divider(height: 1),
-                    ListTile(
-                      leading: const Icon(Icons.ios_share_rounded),
-                      title: const Text('Share app'),
-                      onTap: _shareApp,
-                    ),
-                    const Divider(height: 1),
-                    ListTile(
-                      leading: const Icon(Icons.mail_outline_rounded),
-                      title: const Text('Report / Feedback'),
-                      subtitle: const Text(_feedbackEmail),
-                      onTap: () => _openMail(
-                        to: _feedbackEmail,
-                        subject: 'GPMai Feedback',
-                      ),
                     ),
                   ],
                 ),
@@ -938,8 +1010,10 @@ class _BottomTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final iconColor = selected ? cs.primary : (isLight ? Colors.black87 : Colors.white);
-    final labelColor = selected ? cs.primary : (isLight ? Colors.black54 : Colors.white60);
+    final iconColor =
+        selected ? cs.primary : (isLight ? Colors.black87 : Colors.white);
+    final labelColor =
+        selected ? cs.primary : (isLight ? Colors.black54 : Colors.white60);
 
     return Material(
       color: Colors.transparent,
@@ -959,14 +1033,14 @@ class _BottomTab extends StatelessWidget {
                   SizedBox(height: selected ? 4 : 0),
                   selected
                       ? Text(
-                          label,
-                          style: TextStyle(
-                            fontSize: 11,
-                            height: 1.0,
-                            fontWeight: FontWeight.w700,
-                            color: labelColor,
-                          ),
-                        )
+                        label,
+                        style: TextStyle(
+                          fontSize: 11,
+                          height: 1.0,
+                          fontWeight: FontWeight.w700,
+                          color: labelColor,
+                        ),
+                      )
                       : const SizedBox.shrink(),
                 ],
               ),
@@ -1009,10 +1083,7 @@ class _AiHomePaneState extends State<_AiHomePane> {
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              text,
-              style: TextStyle(color: textColor, height: 1.4),
-            ),
+            child: Text(text, style: TextStyle(color: textColor, height: 1.4)),
           ),
         ],
       ),
@@ -1063,11 +1134,13 @@ class _AiHomePaneState extends State<_AiHomePane> {
     if (!mounted) return;
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => ModelsExplorePage(
-          initialCategory: 'chat',
-          onModelTap: (model) => _openModelInfo(model),
-          onMediaModelTap: (mediaModel) => _openDedicatedMediaPage(mediaModel),
-        ),
+        builder:
+            (_) => ModelsExplorePage(
+              initialCategory: 'chat',
+              onModelTap: (model) => _openModelInfo(model),
+              onMediaModelTap:
+                  (mediaModel) => _openDedicatedMediaPage(mediaModel),
+            ),
       ),
     );
   }
@@ -1076,11 +1149,13 @@ class _AiHomePaneState extends State<_AiHomePane> {
     if (!mounted) return;
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => ModelsExplorePage(
-          initialCategory: categoryKey,
-          onModelTap: (model) => _openModelInfo(model),
-          onMediaModelTap: (mediaModel) => _openDedicatedMediaPage(mediaModel),
-        ),
+        builder:
+            (_) => ModelsExplorePage(
+              initialCategory: categoryKey,
+              onModelTap: (model) => _openModelInfo(model),
+              onMediaModelTap:
+                  (mediaModel) => _openDedicatedMediaPage(mediaModel),
+            ),
       ),
     );
   }
@@ -1089,40 +1164,44 @@ class _AiHomePaneState extends State<_AiHomePane> {
     if (!mounted) return;
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => ModelInfoPage(
-          model: model,
-          onStartChat: () async {
-            Navigator.of(context).pop();
-            await _startCuratedChat(model);
-          },
-          onOpenHistory: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => ModelHistoryPage(
-                  model: model,
-                  loadHistory: _loadHistoryForModel,
-                  onOpenHistoryItem: (item) async {
-                    final store = SqlChatStore();
-                    final chat = await store.getChat(item.id);
-                    if (!mounted || chat == null) return;
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => ChatPage(
-                          userId: widget.userId,
-                          chatId: chat.id,
-                          chatName: chat.name,
+        builder:
+            (_) => ModelInfoPage(
+              model: model,
+              onStartChat: () async {
+                Navigator.of(context).pop();
+                await _startCuratedChat(model);
+              },
+              onOpenHistory: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder:
+                        (_) => ModelHistoryPage(
+                          model: model,
+                          loadHistory: _loadHistoryForModel,
+                          onOpenHistoryItem: (item) async {
+                            final store = SqlChatStore();
+                            final chat = await store.getChat(item.id);
+                            if (!mounted || chat == null) return;
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder:
+                                    (_) => ChatPage(
+                                      userId: widget.userId,
+                                      chatId: chat.id,
+                                      chatName: chat.name,
+                                    ),
+                              ),
+                            );
+                          },
+                          onRename:
+                              (id, title) => SqlChatStore().rename(id, title),
+                          onDelete: (id) => SqlChatStore().deleteChat(id),
+                          onTogglePin: (id) => SqlChatStore().toggleStar(id),
                         ),
-                      ),
-                    );
-                  },
-                  onRename: (id, title) => SqlChatStore().rename(id, title),
-                  onDelete: (id) => SqlChatStore().deleteChat(id),
-                  onTogglePin: (id) => SqlChatStore().toggleStar(id),
-                ),
-              ),
-            );
-          },
-        ),
+                  ),
+                );
+              },
+            ),
       ),
     );
   }
@@ -1159,10 +1238,14 @@ class _AiHomePaneState extends State<_AiHomePane> {
     if (!mounted) return;
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => ModelInfoPage(
-          mediaModel: mediaModel,
-          onGenerate: () async { Navigator.of(context).pop(); await _openDedicatedMediaPage(mediaModel); },
-        ),
+        builder:
+            (_) => ModelInfoPage(
+              mediaModel: mediaModel,
+              onGenerate: () async {
+                Navigator.of(context).pop();
+                await _openDedicatedMediaPage(mediaModel);
+              },
+            ),
       ),
     );
   }
@@ -1185,11 +1268,12 @@ class _AiHomePaneState extends State<_AiHomePane> {
     if (!mounted) return;
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => ChatPage(
-          userId: widget.userId,
-          chatId: id,
-          chatName: mediaModel.name,
-        ),
+        builder:
+            (_) => ChatPage(
+              userId: widget.userId,
+              chatId: id,
+              chatName: mediaModel.name,
+            ),
       ),
     );
   }
@@ -1214,11 +1298,12 @@ class _AiHomePaneState extends State<_AiHomePane> {
     if (!mounted) return;
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => ChatPage(
-          userId: widget.userId,
-          chatId: id,
-          chatName: model.displayName,
-        ),
+        builder:
+            (_) => ChatPage(
+              userId: widget.userId,
+              chatId: id,
+              chatName: model.displayName,
+            ),
       ),
     );
   }
@@ -1228,11 +1313,14 @@ class _AiHomePaneState extends State<_AiHomePane> {
     final store = SqlChatStore();
 
     final selected = await ModelPrefs.getSelected();
-    final modelId = (selected != null && selected.trim().contains('/'))
-        ? selected.trim()
-        : 'openai/gpt-5.2';
+    final modelId =
+        (selected != null && selected.trim().contains('/'))
+            ? selected.trim()
+            : 'openai/gpt-5.2';
 
-    final model = findCuratedModelById(modelId) ?? findCuratedModelById('openai/gpt-5.2')!;
+    final model =
+        findCuratedModelById(modelId) ??
+        findCuratedModelById('openai/gpt-5.2')!;
 
     final id = await store.createChat(
       name: prompt.isEmpty ? model.displayName : prompt,
@@ -1246,11 +1334,7 @@ class _AiHomePaneState extends State<_AiHomePane> {
     );
 
     if (prompt.isNotEmpty) {
-      await store.addMessage(
-        chatId: id,
-        role: 'user',
-        text: prompt,
-      );
+      await store.addMessage(chatId: id, role: 'user', text: prompt);
       _askCtrl.clear();
     }
 
@@ -1260,11 +1344,12 @@ class _AiHomePaneState extends State<_AiHomePane> {
     if (!mounted) return;
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => ChatPage(
-          userId: widget.userId,
-          chatId: id,
-          chatName: model.displayName,
-        ),
+        builder:
+            (_) => ChatPage(
+              userId: widget.userId,
+              chatId: id,
+              chatName: model.displayName,
+            ),
       ),
     );
   }
@@ -1286,9 +1371,7 @@ class _AiHomePaneState extends State<_AiHomePane> {
         .toList();
   }
 
-  Widget _modelsRow({
-    required String title,
-  }) {
+  Widget _modelsRow({required String title}) {
     final isLight = Theme.of(context).brightness == Brightness.light;
     final items = mixedOfficialModels.take(80).toList();
 
@@ -1302,10 +1385,7 @@ class _AiHomePaneState extends State<_AiHomePane> {
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
             ),
             const Spacer(),
-            TextButton(
-              onPressed: _openModelsHub,
-              child: const Text('See all'),
-            ),
+            TextButton(onPressed: _openModelsHub, child: const Text('See all')),
           ],
         ),
         const SizedBox(height: 8),
@@ -1317,7 +1397,11 @@ class _AiHomePaneState extends State<_AiHomePane> {
             separatorBuilder: (_, __) => const SizedBox(width: 10),
             itemBuilder: (ctx, i) {
               final m = items[i];
-              final brand = ProviderBranding.resolve(provider: m.provider, modelId: m.id, displayName: m.displayName);
+              final brand = ProviderBranding.resolve(
+                provider: m.provider,
+                modelId: m.id,
+                displayName: m.displayName,
+              );
               final c = brand.accent;
 
               return InkWell(
@@ -1328,11 +1412,24 @@ class _AiHomePaneState extends State<_AiHomePane> {
                   padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(18),
-                    gradient: LinearGradient(begin: Alignment.centerLeft, end: Alignment.centerRight, colors: brand.vividGradient(Theme.of(context).brightness)),
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: brand.vividGradient(Theme.of(context).brightness),
+                    ),
                     border: Border.all(
                       color: brand.border(Theme.of(context).brightness),
                     ),
-                    boxShadow: isLight ? null : [BoxShadow(color: c.withOpacity(.10), blurRadius: 18, offset: const Offset(0, 6))],
+                    boxShadow:
+                        isLight
+                            ? null
+                            : [
+                              BoxShadow(
+                                color: c.withOpacity(.10),
+                                blurRadius: 18,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1343,7 +1440,9 @@ class _AiHomePaneState extends State<_AiHomePane> {
                         decoration: BoxDecoration(
                           color: brand.iconFill(Theme.of(context).brightness),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: brand.border(Theme.of(context).brightness)),
+                          border: Border.all(
+                            color: brand.border(Theme.of(context).brightness),
+                          ),
                         ),
                         child: Center(
                           child: Text(
@@ -1365,7 +1464,9 @@ class _AiHomePaneState extends State<_AiHomePane> {
                               m.displayName,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontWeight: FontWeight.w800),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
                             const SizedBox(height: 4),
                             Text(
@@ -1374,7 +1475,9 @@ class _AiHomePaneState extends State<_AiHomePane> {
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontSize: 12,
-                                color: brand.mutedText(Theme.of(context).brightness),
+                                color: brand.mutedText(
+                                  Theme.of(context).brightness,
+                                ),
                               ),
                             ),
                             const SizedBox(height: 6),
@@ -1434,7 +1537,11 @@ class _AiHomePaneState extends State<_AiHomePane> {
             separatorBuilder: (_, __) => const SizedBox(width: 10),
             itemBuilder: (ctx, i) {
               final m = items[i];
-              final brand = ProviderBranding.resolve(provider: m.provider, modelId: m.id, displayName: m.name);
+              final brand = ProviderBranding.resolve(
+                provider: m.provider,
+                modelId: m.id,
+                displayName: m.name,
+              );
               final c = brand.accent;
 
               return InkWell(
@@ -1445,11 +1552,24 @@ class _AiHomePaneState extends State<_AiHomePane> {
                   padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(18),
-                    gradient: LinearGradient(begin: Alignment.centerLeft, end: Alignment.centerRight, colors: brand.vividGradient(Theme.of(context).brightness)),
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: brand.vividGradient(Theme.of(context).brightness),
+                    ),
                     border: Border.all(
                       color: brand.border(Theme.of(context).brightness),
                     ),
-                    boxShadow: isLight ? null : [BoxShadow(color: c.withOpacity(.10), blurRadius: 18, offset: const Offset(0, 6))],
+                    boxShadow:
+                        isLight
+                            ? null
+                            : [
+                              BoxShadow(
+                                color: c.withOpacity(.10),
+                                blurRadius: 18,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1460,7 +1580,9 @@ class _AiHomePaneState extends State<_AiHomePane> {
                         decoration: BoxDecoration(
                           color: brand.iconFill(Theme.of(context).brightness),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: brand.border(Theme.of(context).brightness)),
+                          border: Border.all(
+                            color: brand.border(Theme.of(context).brightness),
+                          ),
                         ),
                         child: Icon(
                           _mediaIconFor(m.category),
@@ -1477,7 +1599,9 @@ class _AiHomePaneState extends State<_AiHomePane> {
                               m.name,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontWeight: FontWeight.w800),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
                             const SizedBox(height: 4),
                             Text(
@@ -1486,7 +1610,9 @@ class _AiHomePaneState extends State<_AiHomePane> {
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontSize: 12,
-                                color: brand.mutedText(Theme.of(context).brightness),
+                                color: brand.mutedText(
+                                  Theme.of(context).brightness,
+                                ),
                               ),
                             ),
                             const SizedBox(height: 6),
@@ -1542,7 +1668,13 @@ class _AiHomePaneState extends State<_AiHomePane> {
 
   Future<void> _openBuiltInPersona(PersonaDefinition persona) async {
     await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => PersonaDetailPage.builtIn(userId: widget.userId, builtIn: persona)),
+      MaterialPageRoute(
+        builder:
+            (_) => PersonaDetailPage.builtIn(
+              userId: widget.userId,
+              builtIn: persona,
+            ),
+      ),
     );
   }
 
@@ -1553,9 +1685,15 @@ class _AiHomePaneState extends State<_AiHomePane> {
       children: [
         Row(
           children: [
-            Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+            ),
             const Spacer(),
-            TextButton(onPressed: _openPersonasAll, child: const Text('See all')),
+            TextButton(
+              onPressed: _openPersonasAll,
+              child: const Text('See all'),
+            ),
           ],
         ),
         const SizedBox(height: 8),
@@ -1575,27 +1713,53 @@ class _AiHomePaneState extends State<_AiHomePane> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(18),
-                    gradient: LinearGradient(colors: [p.accent.withOpacity(.18), Colors.transparent]),
+                    gradient: LinearGradient(
+                      colors: [p.accent.withOpacity(.18), Colors.transparent],
+                    ),
                     border: Border.all(color: Colors.white.withOpacity(.08)),
                   ),
-                  child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(14),
-                        color: p.accent.withOpacity(.16),
-                        border: Border.all(color: p.accent.withOpacity(.45)),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(14),
+                          color: p.accent.withOpacity(.16),
+                          border: Border.all(color: p.accent.withOpacity(.45)),
+                        ),
+                        child: Icon(p.icon, color: p.accent, size: 22),
                       ),
-                      child: Icon(p.icon, color: p.accent, size: 22),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(p.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800)),
-                      const SizedBox(height: 6),
-                      Text(p.subtitle, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, color: Colors.white70, height: 1.35)),
-                    ])),
-                  ]),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              p.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              p.subtitle,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.white70,
+                                height: 1.35,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               );
             },
@@ -1605,54 +1769,12 @@ class _AiHomePaneState extends State<_AiHomePane> {
     );
   }
 
-  Widget _specialTile(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    final cs = Theme.of(context).colorScheme;
-    return InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: onTap,
-      child: Ink(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          color: cs.surfaceContainerHighest.withOpacity(.35),
-          border: Border.all(color: cs.onSurface.withOpacity(.12)),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: color.withOpacity(.18),
-                child: Icon(icon, color: color, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ),
-              const Icon(Icons.chevron_right_rounded),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final isLight = Theme.of(context).brightness == Brightness.light;
     final textColor = isLight ? Colors.black87 : Colors.white70;
-    final fieldFill = isLight ? Colors.black.withOpacity(.04) : Colors.white.withOpacity(.05);
+    final fieldFill =
+        isLight ? Colors.black.withOpacity(.04) : Colors.white.withOpacity(.05);
     final border = isLight ? Colors.black12 : Colors.white12;
 
     return SafeArea(
@@ -1676,10 +1798,7 @@ class _AiHomePaneState extends State<_AiHomePane> {
           Text(
             'What would you like to build today?',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 15,
-              color: textColor,
-            ),
+            style: TextStyle(fontSize: 15, color: textColor),
           ),
           const SizedBox(height: 18),
           Container(
@@ -1737,43 +1856,6 @@ class _AiHomePaneState extends State<_AiHomePane> {
           const SizedBox(height: 22),
 
           _personasRow(title: 'Expert Personas'),
-          const SizedBox(height: 22),
-
-          Text(
-            'Quick tools',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-          ),
-          const SizedBox(height: 10),
-          _specialTile(
-            context,
-            icon: Icons.record_voice_over_rounded,
-            title: 'Hands-free Voice',
-            color: const Color(0xFF42A5F5),
-            onTap: () => _openMediaExplore('audio'),
-          ),
-          const SizedBox(height: 10),
-          _specialTile(
-            context,
-            icon: Icons.image_rounded,
-            title: 'Image Generator',
-            color: const Color(0xFFFF4DA6),
-            onTap: () => _openMediaExplore('image'),
-          ),
-          const SizedBox(height: 10),
-          _specialTile(
-            context,
-            icon: Icons.travel_explore_rounded,
-            title: 'Web Searcher',
-            color: const Color(0xFF7E57C2),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => DeepSearchPage(userId: widget.userId)),
-              );
-            },
-          ),
         ],
       ),
     );
@@ -1788,14 +1870,16 @@ class _AnimatedGradientFloatText extends StatefulWidget {
   const _AnimatedGradientFloatText(this.text, {required this.style});
 
   @override
-  State<_AnimatedGradientFloatText> createState() => _AnimatedGradientFloatTextState();
+  State<_AnimatedGradientFloatText> createState() =>
+      _AnimatedGradientFloatTextState();
 }
 
 class _AnimatedGradientFloatTextState extends State<_AnimatedGradientFloatText>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _c =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 2600))
-        ..repeat();
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 2600),
+  )..repeat();
 
   @override
   void dispose() {
@@ -1846,10 +1930,12 @@ class _BobbingOrb extends StatefulWidget {
   State<_BobbingOrb> createState() => _BobbingOrbState();
 }
 
-class _BobbingOrbState extends State<_BobbingOrb> with SingleTickerProviderStateMixin {
-  late final AnimationController _c =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 1400))
-        ..repeat(reverse: true);
+class _BobbingOrbState extends State<_BobbingOrb>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1400),
+  )..repeat(reverse: true);
 
   @override
   void dispose() {
@@ -1877,13 +1963,17 @@ class _BobbingOrbState extends State<_BobbingOrb> with SingleTickerProviderState
 
 /* ================= ALL MODELS ================= */
 
-List<Color> _brandGradient(Color accent) => [accent.withOpacity(.26), accent.withOpacity(.14), const Color(0xFF090B10)];
-
+List<Color> _brandGradient(Color accent) => [
+  accent.withOpacity(.26),
+  accent.withOpacity(.14),
+  const Color(0xFF090B10),
+];
 
 String _resolveBotSystemPrompt(String id) {
   final persona = personaById(id);
   return (persona?.basePrompt ?? '').trim();
 }
+
 class _AllModelsPane extends StatelessWidget {
   final String userId;
   const _AllModelsPane({super.key, required this.userId});
@@ -1907,15 +1997,16 @@ class _AllModelsPane extends StatelessWidget {
     Navigator.of(context).push(
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 280),
-        pageBuilder: (_, a1, __) => FadeTransition(
-          opacity: a1,
-          child: ChatPage(
-            userId: userId,
-            chatId: id,
-            chatName: chatTitle,
-            systemPrompt: botSystem,
-          ),
-        ),
+        pageBuilder:
+            (_, a1, __) => FadeTransition(
+              opacity: a1,
+              child: ChatPage(
+                userId: userId,
+                chatId: id,
+                chatName: chatTitle,
+                systemPrompt: botSystem,
+              ),
+            ),
       ),
     );
   }
@@ -1940,11 +2031,9 @@ class _AllModelsPane extends StatelessWidget {
     if (!context.mounted) return;
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => ChatPage(
-          userId: userId,
-          chatId: id,
-          chatName: mediaModel.name,
-        ),
+        builder:
+            (_) =>
+                ChatPage(userId: userId, chatId: id, chatName: mediaModel.name),
       ),
     );
   }
@@ -1956,27 +2045,29 @@ class _AllModelsPane extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => ModelsExplorePage(
-          initialCategory: categoryKey,
-          onModelTap: (_) {},
-          onMediaModelTap: (mediaModel) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ModelInfoPage(
-                  mediaModel: mediaModel,
-                  onGenerate: () async {
-                    Navigator.of(context).pop();
-                    await _createMediaChatAndOpen(
-                      context: context,
-                      mediaModel: mediaModel,
-                    );
-                  },
-                ),
-              ),
-            );
-          },
-        ),
+        builder:
+            (_) => ModelsExplorePage(
+              initialCategory: categoryKey,
+              onModelTap: (_) {},
+              onMediaModelTap: (mediaModel) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (_) => ModelInfoPage(
+                          mediaModel: mediaModel,
+                          onGenerate: () async {
+                            Navigator.of(context).pop();
+                            await _createMediaChatAndOpen(
+                              context: context,
+                              mediaModel: mediaModel,
+                            );
+                          },
+                        ),
+                  ),
+                );
+              },
+            ),
       ),
     );
   }
@@ -1991,49 +2082,90 @@ class _AllModelsPane extends StatelessWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text("Live Screen Reader (Orb)", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-              const SizedBox(height: 8),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _AiHomePaneState._bullet("Double-tap the orb to open a full chat.", textColor),
-                    _AiHomePaneState._bullet("Hold the orb to open the compact box.", textColor),
-                    _AiHomePaneState._bullet("Ask about whatâ€™s on screen to get a short, relevant answer.", textColor),
-                    _AiHomePaneState._bullet("No continuous monitoring â€” only after you ask.", textColor),
-                  ],
-                ),
+      builder:
+          (ctx) => SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    "Live Screen Reader (Orb)",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _AiHomePaneState._bullet(
+                          "Double-tap the orb to open a full chat.",
+                          textColor,
+                        ),
+                        _AiHomePaneState._bullet(
+                          "Hold the orb to open the compact box.",
+                          textColor,
+                        ),
+                        _AiHomePaneState._bullet(
+                          "Ask about whatâ€™s on screen to get a short, relevant answer.",
+                          textColor,
+                        ),
+                        _AiHomePaneState._bullet(
+                          "No continuous monitoring â€” only after you ask.",
+                          textColor,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  FilledButton.icon(
+                    onPressed: () => Navigator.pop(ctx),
+                    icon: const Icon(Icons.check_rounded),
+                    label: const Text("Got it"),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              FilledButton.icon(
-                onPressed: () => Navigator.pop(ctx),
-                icon: const Icon(Icons.check_rounded),
-                label: const Text("Got it"),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final bots = <_Preset>[
-      _Preset('Relationship Doctor', 'Your 24/7 wingman and love consultant!', Icons.favorite, {'kind': 'bot', 'id': 'relationship_doctor'}),
-      _Preset('Spy', 'Look up people and stay updated!', Icons.visibility, {'kind': 'bot', 'id': 'spy'}),
-      _Preset('Lawyer', 'General legal guidance bot', Icons.balance, {'kind': 'bot', 'id': 'lawyer'}),
-      _Preset('Astrolog', 'Your personal astrologer', Icons.auto_awesome, {'kind': 'bot', 'id': 'astrolog'}),
-      _Preset('Personal Trainer', 'Coach + motivation', Icons.fitness_center, {'kind': 'bot', 'id': 'trainer'}),
-      _Preset('Doctor', 'Friendly health info (not medical advice)', Icons.local_hospital, {'kind': 'bot', 'id': 'doctor'}),
-      _Preset('Writer', 'Any-type writer & rewriter', Icons.edit, {'kind': 'bot', 'id': 'writer'}),
+      _Preset(
+        'Relationship Doctor',
+        'Your 24/7 wingman and love consultant!',
+        Icons.favorite,
+        {'kind': 'bot', 'id': 'relationship_doctor'},
+      ),
+      _Preset('Spy', 'Look up people and stay updated!', Icons.visibility, {
+        'kind': 'bot',
+        'id': 'spy',
+      }),
+      _Preset('Lawyer', 'General legal guidance bot', Icons.balance, {
+        'kind': 'bot',
+        'id': 'lawyer',
+      }),
+      _Preset('Astrolog', 'Your personal astrologer', Icons.auto_awesome, {
+        'kind': 'bot',
+        'id': 'astrolog',
+      }),
+      _Preset('Personal Trainer', 'Coach + motivation', Icons.fitness_center, {
+        'kind': 'bot',
+        'id': 'trainer',
+      }),
+      _Preset(
+        'Doctor',
+        'Friendly health info (not medical advice)',
+        Icons.local_hospital,
+        {'kind': 'bot', 'id': 'doctor'},
+      ),
+      _Preset('Writer', 'Any-type writer & rewriter', Icons.edit, {
+        'kind': 'bot',
+        'id': 'writer',
+      }),
     ];
 
     final models = <_Preset>[
@@ -2043,18 +2175,14 @@ class _AllModelsPane extends StatelessWidget {
         Icons.bolt,
         {'kind': 'model', 'id': 'openai/gpt-5-mini'},
       ),
-      _Preset(
-        'OpenAI GPT-4o',
-        'Multimodal flagship',
-        Icons.auto_awesome,
-        {'kind': 'model', 'id': 'openai/gpt-5.2'},
-      ),
-      _Preset(
-        'OpenAI o3',
-        'Dense reasoning',
-        Icons.psychology,
-        {'kind': 'model', 'id': 'openai/o3'},
-      ),
+      _Preset('OpenAI GPT-4o', 'Multimodal flagship', Icons.auto_awesome, {
+        'kind': 'model',
+        'id': 'openai/gpt-5.2',
+      }),
+      _Preset('OpenAI o3', 'Dense reasoning', Icons.psychology, {
+        'kind': 'model',
+        'id': 'openai/o3',
+      }),
       _Preset(
         'OpenAI o3 Mini',
         'Reasoning, faster tradeoff',
@@ -2086,7 +2214,10 @@ class _AllModelsPane extends StatelessWidget {
         'Web Searcher',
         'Live web + citations',
         Icons.travel_explore,
-        () => Navigator.push(context, MaterialPageRoute(builder: (_) => DeepSearchPage(userId: userId))),
+        () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => DeepSearchPage(userId: userId)),
+        ),
       ),
     ];
 
@@ -2094,17 +2225,28 @@ class _AllModelsPane extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         children: [
-          const Text('AI Bots', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+          const Text(
+            'AI Bots',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          ),
           const SizedBox(height: 8),
           ...bots.map(
             (p) => _PresetRow(
               preset: p,
               showChatButton: true,
-              onTap: () => _createLocalChat(context: context, chatTitle: p.title, preset: p.preset),
+              onTap:
+                  () => _createLocalChat(
+                    context: context,
+                    chatTitle: p.title,
+                    preset: p.preset,
+                  ),
             ),
           ),
           const SizedBox(height: 18),
-          const Text('AI Models', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+          const Text(
+            'AI Models',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          ),
           const SizedBox(height: 8),
           ...models.map(
             (p) => _PresetRow(
@@ -2117,12 +2259,19 @@ class _AllModelsPane extends StatelessWidget {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Model set: ${p.title}')),
                 );
-                await _createLocalChat(context: context, chatTitle: p.title, preset: p.preset);
+                await _createLocalChat(
+                  context: context,
+                  chatTitle: p.title,
+                  preset: p.preset,
+                );
               },
             ),
           ),
           const SizedBox(height: 18),
-          const Text('Special Models', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+          const Text(
+            'Special Models',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          ),
           const SizedBox(height: 8),
           ...special.map((p) => _PresetActionRow(action: p)),
         ],
@@ -2167,24 +2316,39 @@ class _PresetRow extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 6),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: isLight ? Colors.black.withOpacity(.06) : const Color(0xFFEFF3FF),
-          child: Icon(preset.icon, color: isLight ? Colors.black87 : const Color(0xFF246BFD)),
+          backgroundColor:
+              isLight ? Colors.black.withOpacity(.06) : const Color(0xFFEFF3FF),
+          child: Icon(
+            preset.icon,
+            color: isLight ? Colors.black87 : const Color(0xFF246BFD),
+          ),
         ),
-        title: Text(preset.title, style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text(preset.subtitle, maxLines: 2, overflow: TextOverflow.ellipsis),
-        trailing: showChatButton
-            ? ElevatedButton(
-                onPressed: onTap,
-                style: ElevatedButton.styleFrom(
-                  elevation: 0,
-                  backgroundColor: cs.primary,
-                  foregroundColor: Colors.black,
-                  shape: const StadiumBorder(),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                ),
-                child: const Text('CHAT'),
-              )
-            : const Icon(Icons.chevron_right_rounded),
+        title: Text(
+          preset.title,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(
+          preset.subtitle,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        trailing:
+            showChatButton
+                ? ElevatedButton(
+                  onPressed: onTap,
+                  style: ElevatedButton.styleFrom(
+                    elevation: 0,
+                    backgroundColor: cs.primary,
+                    foregroundColor: Colors.black,
+                    shape: const StadiumBorder(),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                  ),
+                  child: const Text('CHAT'),
+                )
+                : const Icon(Icons.chevron_right_rounded),
         onTap: onTap,
       ),
     );
@@ -2203,11 +2367,22 @@ class _PresetActionRow extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 6),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: isLight ? Colors.black.withOpacity(.06) : const Color(0xFFEFF3FF),
-          child: Icon(action.icon, color: isLight ? Colors.black87 : const Color(0xFF246BFD)),
+          backgroundColor:
+              isLight ? Colors.black.withOpacity(.06) : const Color(0xFFEFF3FF),
+          child: Icon(
+            action.icon,
+            color: isLight ? Colors.black87 : const Color(0xFF246BFD),
+          ),
         ),
-        title: Text(action.title, style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text(action.subtitle, maxLines: 2, overflow: TextOverflow.ellipsis),
+        title: Text(
+          action.title,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(
+          action.subtitle,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
         trailing: const Icon(Icons.chevron_right_rounded),
         onTap: action.onTap,
       ),
@@ -2225,7 +2400,8 @@ class _InboxPane extends StatefulWidget {
   State<_InboxPane> createState() => _InboxPaneState();
 }
 
-class _InboxPaneState extends State<_InboxPane> with SingleTickerProviderStateMixin {
+class _InboxPaneState extends State<_InboxPane>
+    with SingleTickerProviderStateMixin {
   late final TabController _tc = TabController(length: 2, vsync: this);
 
   bool _selectionMode = false;
@@ -2244,10 +2420,15 @@ class _InboxPaneState extends State<_InboxPane> with SingleTickerProviderStateMi
     Navigator.of(context).push(
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 280),
-        pageBuilder: (_, a1, __) => FadeTransition(
-          opacity: a1,
-          child: ChatPage(userId: widget.userId, chatId: id, chatName: 'New Chat'),
-        ),
+        pageBuilder:
+            (_, a1, __) => FadeTransition(
+              opacity: a1,
+              child: ChatPage(
+                userId: widget.userId,
+                chatId: id,
+                chatName: 'New Chat',
+              ),
+            ),
       ),
     );
   }
@@ -2256,14 +2437,21 @@ class _InboxPaneState extends State<_InboxPane> with SingleTickerProviderStateMi
     if (_selected.isEmpty) return;
     final ok = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Delete selected?"),
-        content: Text("Delete ${_selected.length} chat(s) locally."),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
-          ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text("Delete")),
-        ],
-      ),
+      builder:
+          (_) => AlertDialog(
+            title: const Text("Delete selected?"),
+            content: Text("Delete ${_selected.length} chat(s) locally."),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text("Cancel"),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text("Delete"),
+              ),
+            ],
+          ),
     );
     if (ok != true) return;
 
@@ -2317,33 +2505,51 @@ class _InboxPaneState extends State<_InboxPane> with SingleTickerProviderStateMi
                 },
                 child: Card(
                   child: ListTile(
-                    leading: _selectionMode
-                        ? Checkbox(
-                            value: selected,
-                            onChanged: (v) {
-                              setState(() {
-                                if (v == true) {
-                                  _selected.add(id);
-                                } else {
-                                  _selected.remove(id);
-                                }
-                              });
-                            },
-                          )
-                        : Icon(
-                            starred ? Icons.star_rounded : Icons.chat_bubble_outline_rounded,
-                            color: starred ? const Color(0xFF00B8FF) : (isLight ? Colors.black87 : null),
-                          ),
-                    title: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
-                    trailing: _selectionMode
-                        ? null
-                        : IconButton(
-                            icon: Icon(
-                              starred ? Icons.star_rounded : Icons.star_border_rounded,
-                              color: starred ? cs.primary : (isLight ? Colors.black45 : Colors.white60),
+                    leading:
+                        _selectionMode
+                            ? Checkbox(
+                              value: selected,
+                              onChanged: (v) {
+                                setState(() {
+                                  if (v == true) {
+                                    _selected.add(id);
+                                  } else {
+                                    _selected.remove(id);
+                                  }
+                                });
+                              },
+                            )
+                            : Icon(
+                              starred
+                                  ? Icons.star_rounded
+                                  : Icons.chat_bubble_outline_rounded,
+                              color:
+                                  starred
+                                      ? const Color(0xFF00B8FF)
+                                      : (isLight ? Colors.black87 : null),
                             ),
-                            onPressed: toggleStar,
-                          ),
+                    title: Text(
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing:
+                        _selectionMode
+                            ? null
+                            : IconButton(
+                              icon: Icon(
+                                starred
+                                    ? Icons.star_rounded
+                                    : Icons.star_border_rounded,
+                                color:
+                                    starred
+                                        ? cs.primary
+                                        : (isLight
+                                            ? Colors.black45
+                                            : Colors.white60),
+                              ),
+                              onPressed: toggleStar,
+                            ),
                     onTap: () {
                       if (_selectionMode) {
                         setState(() {
@@ -2354,10 +2560,15 @@ class _InboxPaneState extends State<_InboxPane> with SingleTickerProviderStateMi
                       Navigator.of(context).push(
                         PageRouteBuilder(
                           transitionDuration: const Duration(milliseconds: 280),
-                          pageBuilder: (_, a1, __) => FadeTransition(
-                            opacity: a1,
-                            child: ChatPage(userId: widget.userId, chatId: id, chatName: name),
-                          ),
+                          pageBuilder:
+                              (_, a1, __) => FadeTransition(
+                                opacity: a1,
+                                child: ChatPage(
+                                  userId: widget.userId,
+                                  chatId: id,
+                                  chatName: name,
+                                ),
+                              ),
                         ),
                       );
                     },
@@ -2376,7 +2587,10 @@ class _InboxPaneState extends State<_InboxPane> with SingleTickerProviderStateMi
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
           child: Row(
             children: [
-              const Text("Inbox", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+              const Text(
+                "Inbox",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              ),
               const Spacer(),
               if (_selectionMode) ...[
                 TextButton(
@@ -2430,9 +2644,13 @@ class _InboxPaneState extends State<_InboxPane> with SingleTickerProviderStateMi
           unselectedLabelColor: isLight ? Colors.black54 : Colors.white60,
           tabs: const [Tab(text: "History"), Tab(text: "Starred")],
         ),
-        Expanded(child: TabBarView(controller: _tc, children: [list(false), list(true)])),
+        Expanded(
+          child: TabBarView(
+            controller: _tc,
+            children: [list(false), list(true)],
+          ),
+        ),
       ],
     );
   }
 }
-

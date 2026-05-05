@@ -9,7 +9,8 @@ import '../services/gpmai_memory_api.dart';
 class MemoryGraphPage extends StatefulWidget {
   final GpmaiMemoryApi api;
 
-  const MemoryGraphPage({super.key, GpmaiMemoryApi? api}) : api = api ?? const GpmaiMemoryApi();
+  const MemoryGraphPage({super.key, GpmaiMemoryApi? api})
+    : api = api ?? const GpmaiMemoryApi();
 
   @override
   State<MemoryGraphPage> createState() => _MemoryGraphPageState();
@@ -38,7 +39,9 @@ class _MemoryGraphPageState extends State<MemoryGraphPage> {
   Future<void> _load({bool force = false}) async {
     final now = DateTime.now().millisecondsSinceEpoch;
     final cached = _cachedGraph;
-    if (!force && cached != null && (now - _cachedGraphAt) < _graphCacheTtl.inMilliseconds) {
+    if (!force &&
+        cached != null &&
+        (now - _cachedGraphAt) < _graphCacheTtl.inMilliseconds) {
       setState(() {
         _graph = cached;
         _loading = false;
@@ -71,9 +74,14 @@ class _MemoryGraphPageState extends State<MemoryGraphPage> {
     final now = DateTime.now().millisecondsSinceEpoch;
     final elapsed = now - _lastManualRefreshAt;
     if (elapsed < _manualRefreshCooldown.inMilliseconds) {
-      final remaining = ((_manualRefreshCooldown.inMilliseconds - elapsed) / 1000).ceil();
+      final remaining =
+          ((_manualRefreshCooldown.inMilliseconds - elapsed) / 1000).ceil();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Graph refresh is cooling down for $remaining sec to protect Firestore quota.')),
+        SnackBar(
+          content: Text(
+            'Graph refresh is cooling down for $remaining sec to protect Firestore quota.',
+          ),
+        ),
       );
       return;
     }
@@ -97,12 +105,17 @@ class _MemoryGraphPageState extends State<MemoryGraphPage> {
     final viewport = MediaQuery.of(context).size;
     final targetW = viewport.width - 40;
     final targetH = viewport.height - 220;
-    final scale = [targetW / graphW, targetH / graphH, 1.0].reduce(math.min).clamp(0.34, 0.92);
+    final scale = [
+      targetW / graphW,
+      targetH / graphH,
+      1.0,
+    ].reduce(math.min).clamp(0.34, 0.92);
     final dx = (targetW - graphW * scale) / 2 - minX * scale;
     final dy = (targetH - graphH * scale) / 2 - minY * scale;
-    _controller.value = Matrix4.identity()
-      ..translate(dx, dy)
-      ..scale(scale);
+    _controller.value =
+        Matrix4.identity()
+          ..translate(dx, dy)
+          ..scale(scale);
   }
 
   @override
@@ -114,25 +127,33 @@ class _MemoryGraphPageState extends State<MemoryGraphPage> {
         elevation: 0,
         title: const Text('Brain graph'),
         actions: [
-          IconButton(onPressed: _manualRefresh, icon: const Icon(Icons.refresh_rounded)),
-          IconButton(onPressed: _fitGraph, icon: const Icon(Icons.center_focus_strong_rounded)),
+          IconButton(
+            onPressed: _manualRefresh,
+            icon: const Icon(Icons.refresh_rounded),
+          ),
+          IconButton(
+            onPressed: _fitGraph,
+            icon: const Icon(Icons.center_focus_strong_rounded),
+          ),
         ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
+      body:
+          _loading
+              ? const Center(child: CircularProgressIndicator())
+              : _error != null
               ? _errorView()
               : _graph == null || _graph!.nodes.isEmpty
-                  ? _emptyView()
-                  : _graphView(),
+              ? _emptyView()
+              : _graphView(),
     );
   }
 
   Widget _graphView() {
     final graph = _graph!;
     final layout = _computeLayout(graph.nodes);
-    final clusters = layout.clusters.values.toList()
-      ..sort((a, b) => b.nodeCount.compareTo(a.nodeCount));
+    final clusters =
+        layout.clusters.values.toList()
+          ..sort((a, b) => b.nodeCount.compareTo(a.nodeCount));
     final stats = graph.stats;
 
     return Stack(
@@ -148,7 +169,10 @@ class _MemoryGraphPageState extends State<MemoryGraphPage> {
               width: 2800,
               height: 2100,
               child: CustomPaint(
-                painter: _BrainBackdropPainter(layout: layout, selectedNodeId: _selected?.id),
+                painter: _BrainBackdropPainter(
+                  layout: layout,
+                  selectedNodeId: _selected?.id,
+                ),
                 foregroundPainter: _GraphEdgePainter(
                   layout: layout,
                   edges: graph.connections,
@@ -163,7 +187,12 @@ class _MemoryGraphPageState extends State<MemoryGraphPage> {
             ),
           ),
         ),
-        Positioned(left: 16, right: 16, top: 12, child: _topPanel(stats, clusters)),
+        Positioned(
+          left: 16,
+          right: 16,
+          top: 12,
+          child: _topPanel(stats, clusters),
+        ),
         Positioned(
           right: 16,
           top: 116,
@@ -173,7 +202,12 @@ class _MemoryGraphPageState extends State<MemoryGraphPage> {
           ),
         ),
         if (_selected != null)
-          Positioned(left: 16, right: 16, bottom: 16, child: _inspectorCard(_selected!)),
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 16,
+            child: _inspectorCard(_selected!),
+          ),
       ],
     );
   }
@@ -187,7 +221,11 @@ class _MemoryGraphPageState extends State<MemoryGraphPage> {
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.white.withOpacity(0.08)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.24), blurRadius: 24, offset: const Offset(0, 10)),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.24),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+          ),
         ],
       ),
       child: Column(
@@ -197,13 +235,23 @@ class _MemoryGraphPageState extends State<MemoryGraphPage> {
             spacing: 12,
             runSpacing: 8,
             children: [
-              _statChip('Nodes', '${stats['nodes'] ?? _graph?.nodes.length ?? 0}'),
+              _statChip(
+                'Nodes',
+                '${stats['nodes'] ?? _graph?.nodes.length ?? 0}',
+              ),
               _statChip('Edges', '${_graph?.connections.length ?? 0}'),
-              _statChip('Events', '${stats['events'] ?? _graph?.events.length ?? 0}'),
-              _statChip('Clusters', '${stats['clusters'] ?? topClusters.length}'),
+              _statChip(
+                'Events',
+                '${stats['events'] ?? _graph?.events.length ?? 0}',
+              ),
+              _statChip(
+                'Clusters',
+                '${stats['clusters'] ?? topClusters.length}',
+              ),
               if (_graph?.quotaSafeMode == true) _statChip('Quota', 'safe'),
               if (_graph?.limited == true) _statChip('Limited', 'yes'),
-              if (_graph?.pass2Deferred == true) _statChip('Pass 2', 'deferred'),
+              if (_graph?.pass2Deferred == true)
+                _statChip('Pass 2', 'deferred'),
               if (_selected != null) _statChip('Selected', _selected!.label),
             ],
           ),
@@ -211,12 +259,15 @@ class _MemoryGraphPageState extends State<MemoryGraphPage> {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: topClusters
-                  .map((cluster) => Padding(
-                        padding: const EdgeInsets.only(right: 10),
-                        child: _clusterChip(cluster),
-                      ))
-                  .toList(),
+              children:
+                  topClusters
+                      .map(
+                        (cluster) => Padding(
+                          padding: const EdgeInsets.only(right: 10),
+                          child: _clusterChip(cluster),
+                        ),
+                      )
+                      .toList(),
             ),
           ),
         ],
@@ -237,9 +288,15 @@ class _MemoryGraphPageState extends State<MemoryGraphPage> {
           children: [
             TextSpan(
               text: '$label: ',
-              style: TextStyle(color: Colors.white.withOpacity(0.65), fontWeight: FontWeight.w700),
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.65),
+                fontWeight: FontWeight.w700,
+              ),
             ),
-            TextSpan(text: value, style: const TextStyle(fontWeight: FontWeight.w900)),
+            TextSpan(
+              text: value,
+              style: const TextStyle(fontWeight: FontWeight.w900),
+            ),
           ],
         ),
       ),
@@ -260,17 +317,26 @@ class _MemoryGraphPageState extends State<MemoryGraphPage> {
           Container(
             width: 10,
             height: 10,
-            decoration: BoxDecoration(color: cluster.color, shape: BoxShape.circle),
+            decoration: BoxDecoration(
+              color: cluster.color,
+              shape: BoxShape.circle,
+            ),
           ),
           const SizedBox(width: 8),
           Text(
             cluster.label,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+            ),
           ),
           const SizedBox(width: 8),
           Text(
             '${cluster.nodeCount}',
-            style: TextStyle(color: Colors.white.withOpacity(0.68), fontWeight: FontWeight.w700),
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.68),
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),
@@ -295,7 +361,10 @@ class _MemoryGraphPageState extends State<MemoryGraphPage> {
             children: const [
               Icon(Icons.info_outline_rounded, size: 18),
               SizedBox(width: 8),
-              Text('Graph guide', style: TextStyle(fontWeight: FontWeight.w800)),
+              Text(
+                'Graph guide',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
             ],
           ),
         ),
@@ -310,15 +379,30 @@ class _MemoryGraphPageState extends State<MemoryGraphPage> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(width: 10, height: 10, margin: const EdgeInsets.only(top: 4), decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+            Container(
+              width: 10,
+              height: 10,
+              margin: const EdgeInsets.only(top: 4),
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
+                  Text(
+                    title,
+                    style: const TextStyle(fontWeight: FontWeight.w900),
+                  ),
                   const SizedBox(height: 2),
-                  Text(subtitle, style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12.5, height: 1.35)),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.7),
+                      fontSize: 12.5,
+                      height: 1.35,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -340,20 +424,48 @@ class _MemoryGraphPageState extends State<MemoryGraphPage> {
         children: [
           Row(
             children: [
-              const Expanded(child: Text('Graph guide', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14.5))),
+              const Expanded(
+                child: Text(
+                  'Graph guide',
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14.5),
+                ),
+              ),
               IconButton(
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+                constraints: const BoxConstraints.tightFor(
+                  width: 28,
+                  height: 28,
+                ),
                 onPressed: () => setState(() => _legendOpen = false),
                 icon: const Icon(Icons.close_rounded, size: 18),
               ),
             ],
           ),
-          item(const Color(0xFF60A5FA), 'Cluster aura', 'Soft background region showing semantic home, not a hard box.'),
-          item(const Color(0xFF9F7AEA), 'Project / system node', 'Important project-style concepts get stronger visual weight.'),
-          item(const Color(0xFF38BDF8), 'Skill / learning node', 'Blue accents show learning and capability topics.'),
-          item(const Color(0xFFF59E0B), 'Goal / drive node', 'Warm nodes show motivation, goals, and forward drive.'),
-          item(const Color(0xFF94A3B8), 'Historical / weak edge', 'Fainter edge styles mean context/fallback or lower current priority.'),
+          item(
+            const Color(0xFF60A5FA),
+            'Cluster aura',
+            'Soft background region showing semantic home, not a hard box.',
+          ),
+          item(
+            const Color(0xFF9F7AEA),
+            'Project / system node',
+            'Important project-style concepts get stronger visual weight.',
+          ),
+          item(
+            const Color(0xFF38BDF8),
+            'Skill / learning node',
+            'Blue accents show learning and capability topics.',
+          ),
+          item(
+            const Color(0xFFF59E0B),
+            'Goal / drive node',
+            'Warm nodes show motivation, goals, and forward drive.',
+          ),
+          item(
+            const Color(0xFF94A3B8),
+            'Historical / weak edge',
+            'Fainter edge styles mean context/fallback or lower current priority.',
+          ),
         ],
       ),
     );
@@ -362,12 +474,20 @@ class _MemoryGraphPageState extends State<MemoryGraphPage> {
   Widget _inspectorCard(MemoryNodeVm node) {
     final style = _nodeStyle(node);
     final graph = _graph;
-    final nodeSlices = graph == null
-        ? const <MemorySliceVm>[]
-        : graph.recentSlices.where((slice) => _sliceBelongsToNode(slice, node)).take(4).toList(growable: false);
-    final nodeEvents = graph == null
-        ? const <MemoryEventVm>[]
-        : graph.events.where((event) => _eventBelongsToNode(event, node)).take(4).toList(growable: false);
+    final nodeSlices =
+        graph == null
+            ? const <MemorySliceVm>[]
+            : graph.recentSlices
+                .where((slice) => _sliceBelongsToNode(slice, node))
+                .take(4)
+                .toList(growable: false);
+    final nodeEvents =
+        graph == null
+            ? const <MemoryEventVm>[]
+            : graph.events
+                .where((event) => _eventBelongsToNode(event, node))
+                .take(4)
+                .toList(growable: false);
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -384,13 +504,25 @@ class _MemoryGraphPageState extends State<MemoryGraphPage> {
               Container(
                 width: 14,
                 height: 14,
-                decoration: BoxDecoration(color: style.accent, shape: BoxShape.circle),
+                decoration: BoxDecoration(
+                  color: style.accent,
+                  shape: BoxShape.circle,
+                ),
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: Text(node.label, style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
+                child: Text(
+                  node.label,
+                  style: const TextStyle(
+                    fontSize: 21,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
               ),
-              IconButton(onPressed: () => setState(() => _selected = null), icon: const Icon(Icons.close_rounded)),
+              IconButton(
+                onPressed: () => setState(() => _selected = null),
+                icon: const Icon(Icons.close_rounded),
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -411,17 +543,35 @@ class _MemoryGraphPageState extends State<MemoryGraphPage> {
           const SizedBox(height: 14),
           _meter('Heat', node.heat / 100.0, style.accent),
           const SizedBox(height: 10),
-          _meter('Activity', ((node.count.clamp(1, 12)) / 12.0).toDouble(), style.secondary),
+          _meter(
+            'Activity',
+            ((node.count.clamp(1, 12)) / 12.0).toDouble(),
+            style.secondary,
+          ),
           const SizedBox(height: 14),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
               _truthBadge('Node', Icons.hub_rounded, const Color(0xFFA78BFA)),
-              if (node.sliceCount > 0) _truthBadge('Slice ×${node.sliceCount}', Icons.notes_rounded, const Color(0xFF38BDF8)),
-              if (node.eventCount > 0) _truthBadge('Event ×${node.eventCount}', Icons.bolt_rounded, const Color(0xFF34D399)),
+              if (node.sliceCount > 0)
+                _truthBadge(
+                  'Slice ×${node.sliceCount}',
+                  Icons.notes_rounded,
+                  const Color(0xFF38BDF8),
+                ),
+              if (node.eventCount > 0)
+                _truthBadge(
+                  'Event ×${node.eventCount}',
+                  Icons.bolt_rounded,
+                  const Color(0xFF34D399),
+                ),
               if ((node.lifecycleAction ?? '').trim().isNotEmpty)
-                _truthBadge(node.lifecycleAction!, Icons.flag_rounded, const Color(0xFFF59E0B)),
+                _truthBadge(
+                  node.lifecycleAction!,
+                  Icons.flag_rounded,
+                  const Color(0xFFF59E0B),
+                ),
             ],
           ),
           if ((node.latestSliceSummary ?? '').trim().isNotEmpty) ...[
@@ -442,7 +592,13 @@ class _MemoryGraphPageState extends State<MemoryGraphPage> {
           ],
           if ((node.info ?? '').trim().isNotEmpty) ...[
             const SizedBox(height: 14),
-            Text(node.info!, style: TextStyle(color: Colors.white.withOpacity(0.78), height: 1.5)),
+            Text(
+              node.info!,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.78),
+                height: 1.5,
+              ),
+            ),
           ],
         ],
       ),
@@ -452,13 +608,17 @@ class _MemoryGraphPageState extends State<MemoryGraphPage> {
   bool _sliceBelongsToNode(MemorySliceVm slice, MemoryNodeVm node) {
     final sliceNodeId = slice.nodeId.trim();
     final sliceLabel = slice.nodeLabel.trim().toLowerCase();
-    return sliceNodeId == node.id || (sliceLabel.isNotEmpty && sliceLabel == node.label.trim().toLowerCase());
+    return sliceNodeId == node.id ||
+        (sliceLabel.isNotEmpty &&
+            sliceLabel == node.label.trim().toLowerCase());
   }
 
   bool _eventBelongsToNode(MemoryEventVm event, MemoryNodeVm node) {
     final eventNodeId = event.primaryNodeId.trim();
     final eventLabel = event.primaryNodeLabel.trim().toLowerCase();
-    return eventNodeId == node.id || (eventLabel.isNotEmpty && eventLabel == node.label.trim().toLowerCase());
+    return eventNodeId == node.id ||
+        (eventLabel.isNotEmpty &&
+            eventLabel == node.label.trim().toLowerCase());
   }
 
   Widget _truthBadge(String label, IconData icon, Color color) {
@@ -474,7 +634,14 @@ class _MemoryGraphPageState extends State<MemoryGraphPage> {
         children: [
           Icon(icon, size: 13.5, color: color),
           const SizedBox(width: 6),
-          Text(label, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w900)),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
         ],
       ),
     );
@@ -483,24 +650,38 @@ class _MemoryGraphPageState extends State<MemoryGraphPage> {
   Widget _sliceListSection(String title, List<MemorySliceVm> slices) {
     return _miniListSection(
       title,
-      slices.map((slice) {
-        final text = slice.narrativeSummary.trim().isNotEmpty ? slice.narrativeSummary : slice.summaryDraft;
-        final kind = slice.kind.trim().isEmpty ? 'slice' : slice.kind.trim();
-        return _miniListItem(kind, text);
-      }).toList(growable: false),
+      slices
+          .map((slice) {
+            final text =
+                slice.narrativeSummary.trim().isNotEmpty
+                    ? slice.narrativeSummary
+                    : slice.summaryDraft;
+            final kind =
+                slice.kind.trim().isEmpty ? 'slice' : slice.kind.trim();
+            return _miniListItem(kind, text);
+          })
+          .toList(growable: false),
     );
   }
 
   Widget _eventListSection(String title, List<MemoryEventVm> events) {
     return _miniListSection(
       title,
-      events.map((event) {
-        final label = event.lifecycleAction.trim().isNotEmpty
-            ? event.lifecycleAction
-            : (event.eventType.trim().isNotEmpty ? event.eventType : 'event');
-        final text = event.summary.trim().isNotEmpty ? event.summary : event.primaryNodeLabel;
-        return _miniListItem(label, text);
-      }).toList(growable: false),
+      events
+          .map((event) {
+            final label =
+                event.lifecycleAction.trim().isNotEmpty
+                    ? event.lifecycleAction
+                    : (event.eventType.trim().isNotEmpty
+                        ? event.eventType
+                        : 'event');
+            final text =
+                event.summary.trim().isNotEmpty
+                    ? event.summary
+                    : event.primaryNodeLabel;
+            return _miniListItem(label, text);
+          })
+          .toList(growable: false),
     );
   }
 
@@ -517,7 +698,14 @@ class _MemoryGraphPageState extends State<MemoryGraphPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: TextStyle(color: Colors.white.withOpacity(0.66), fontSize: 12, fontWeight: FontWeight.w800)),
+          Text(
+            title,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.66),
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
           const SizedBox(height: 8),
           ...children,
         ],
@@ -535,15 +723,24 @@ class _MemoryGraphPageState extends State<MemoryGraphPage> {
             margin: const EdgeInsets.only(top: 4),
             width: 7,
             height: 7,
-            decoration: const BoxDecoration(color: Color(0xFF38BDF8), shape: BoxShape.circle),
+            decoration: const BoxDecoration(
+              color: Color(0xFF38BDF8),
+              shape: BoxShape.circle,
+            ),
           ),
           const SizedBox(width: 8),
           Expanded(
             child: RichText(
               text: TextSpan(
-                style: TextStyle(color: Colors.white.withOpacity(0.82), height: 1.34),
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.82),
+                  height: 1.34,
+                ),
                 children: [
-                  TextSpan(text: '$label: ', style: const TextStyle(fontWeight: FontWeight.w900)),
+                  TextSpan(
+                    text: '$label: ',
+                    style: const TextStyle(fontWeight: FontWeight.w900),
+                  ),
                   TextSpan(text: body.trim().isEmpty ? '—' : body.trim()),
                 ],
               ),
@@ -566,9 +763,22 @@ class _MemoryGraphPageState extends State<MemoryGraphPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: TextStyle(color: Colors.white.withOpacity(0.66), fontSize: 12, fontWeight: FontWeight.w800)),
+          Text(
+            title,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.66),
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
           const SizedBox(height: 6),
-          Text(body, style: TextStyle(color: Colors.white.withOpacity(0.82), height: 1.42)),
+          Text(
+            body,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.82),
+              height: 1.42,
+            ),
+          ),
         ],
       ),
     );
@@ -578,7 +788,13 @@ class _MemoryGraphPageState extends State<MemoryGraphPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(color: Colors.white.withOpacity(0.68), fontWeight: FontWeight.w700)),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.68),
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         const SizedBox(height: 6),
         ClipRRect(
           borderRadius: BorderRadius.circular(999),
@@ -604,8 +820,17 @@ class _MemoryGraphPageState extends State<MemoryGraphPage> {
         text: TextSpan(
           style: const TextStyle(color: Colors.white),
           children: [
-            TextSpan(text: '$label: ', style: TextStyle(color: Colors.white.withOpacity(0.65), fontWeight: FontWeight.w700)),
-            TextSpan(text: value, style: const TextStyle(fontWeight: FontWeight.w900)),
+            TextSpan(
+              text: '$label: ',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.65),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            TextSpan(
+              text: value,
+              style: const TextStyle(fontWeight: FontWeight.w900),
+            ),
           ],
         ),
       ),
@@ -617,7 +842,10 @@ class _MemoryGraphPageState extends State<MemoryGraphPage> {
       child: Container(
         margin: const EdgeInsets.all(22),
         padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(color: const Color(0xFF07182B), borderRadius: BorderRadius.circular(26)),
+        decoration: BoxDecoration(
+          color: const Color(0xFF07182B),
+          borderRadius: BorderRadius.circular(26),
+        ),
         child: const Text(
           'No graph nodes yet.\nStart chatting and let the learning engine create durable nodes first.',
           textAlign: TextAlign.center,
@@ -632,8 +860,14 @@ class _MemoryGraphPageState extends State<MemoryGraphPage> {
       child: Container(
         margin: const EdgeInsets.all(22),
         padding: const EdgeInsets.all(22),
-        decoration: BoxDecoration(color: const Color(0xFF07182B), borderRadius: BorderRadius.circular(24)),
-        child: SelectableText(_error!, style: const TextStyle(fontSize: 15, height: 1.45)),
+        decoration: BoxDecoration(
+          color: const Color(0xFF07182B),
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: SelectableText(
+          _error!,
+          style: const TextStyle(fontSize: 15, height: 1.45),
+        ),
       ),
     );
   }
@@ -673,7 +907,11 @@ class _GraphLayout {
   final Map<String, Offset> positions;
   final Map<String, _ClusterRegion> clusters;
 
-  const _GraphLayout({required this.nodes, required this.positions, required this.clusters});
+  const _GraphLayout({
+    required this.nodes,
+    required this.positions,
+    required this.clusters,
+  });
 }
 
 _GraphLayout _computeLayout(List<MemoryNodeVm> nodes) {
@@ -693,12 +931,14 @@ _GraphLayout _computeLayout(List<MemoryNodeVm> nodes) {
 
   final clusterBuckets = <String, List<MemoryNodeVm>>{};
   for (final node in safeNodes.where((n) => !n.isRoot)) {
-    final clusterId = node.cluster.trim().isEmpty ? 'general' : node.cluster.trim();
+    final clusterId =
+        node.cluster.trim().isEmpty ? 'general' : node.cluster.trim();
     clusterBuckets.putIfAbsent(clusterId, () => []).add(node);
   }
 
-  final clusterEntries = clusterBuckets.entries.toList()
-    ..sort((a, b) => b.value.length.compareTo(a.value.length));
+  final clusterEntries =
+      clusterBuckets.entries.toList()
+        ..sort((a, b) => b.value.length.compareTo(a.value.length));
   final total = math.max(clusterEntries.length, 1);
   final singleCluster = total == 1;
   final ringX = singleCluster ? 0.0 : 880.0;
@@ -706,10 +946,15 @@ _GraphLayout _computeLayout(List<MemoryNodeVm> nodes) {
 
   for (var i = 0; i < clusterEntries.length; i++) {
     final entry = clusterEntries[i];
-    final angle = total == 1 ? -math.pi / 2 : (math.pi * 2 / total) * i - math.pi / 2;
-    final center = singleCluster
-        ? const Offset(1400, 820)
-        : Offset(rootCenter.dx + math.cos(angle) * ringX, rootCenter.dy - 120 + math.sin(angle) * ringY);
+    final angle =
+        total == 1 ? -math.pi / 2 : (math.pi * 2 / total) * i - math.pi / 2;
+    final center =
+        singleCluster
+            ? const Offset(1400, 820)
+            : Offset(
+              rootCenter.dx + math.cos(angle) * ringX,
+              rootCenter.dy - 120 + math.sin(angle) * ringY,
+            );
     final regionColor = _clusterColor(entry.key);
     final baseRadius = singleCluster ? 360.0 : 250.0;
     final radius = baseRadius + (entry.value.length.clamp(0, 14) * 18.0);
@@ -727,26 +972,35 @@ _GraphLayout _computeLayout(List<MemoryNodeVm> nodes) {
     for (final node in entry.value) {
       roleBuckets.putIfAbsent(_normalizeRole(node.group), () => []).add(node);
     }
-    final roleEntries = roleBuckets.entries.toList()
-      ..sort((a, b) => b.value.length.compareTo(a.value.length));
+    final roleEntries =
+        roleBuckets.entries.toList()
+          ..sort((a, b) => b.value.length.compareTo(a.value.length));
     final roleTotal = math.max(roleEntries.length, 1);
     final roleOrbit = singleCluster ? 185.0 : 150.0;
 
     for (var r = 0; r < roleEntries.length; r++) {
       final roleEntry = roleEntries[r];
-      final roleAngle = roleTotal == 1 ? -math.pi / 2 : (math.pi * 2 / roleTotal) * r - math.pi / 2;
-      final pocketCenter = roleTotal == 1
-          ? center
-          : Offset(center.dx + math.cos(roleAngle) * roleOrbit, center.dy + math.sin(roleAngle) * (roleOrbit - 18));
+      final roleAngle =
+          roleTotal == 1
+              ? -math.pi / 2
+              : (math.pi * 2 / roleTotal) * r - math.pi / 2;
+      final pocketCenter =
+          roleTotal == 1
+              ? center
+              : Offset(
+                center.dx + math.cos(roleAngle) * roleOrbit,
+                center.dy + math.sin(roleAngle) * (roleOrbit - 18),
+              );
       final items = roleEntry.value;
       final count = math.max(items.length, 1);
       for (var n = 0; n < items.length; n++) {
         final node = items[n];
         final ringIndex = n ~/ 4;
         final localRing = 78.0 + ringIndex * 76.0;
-        final localAngle = count == 1
-            ? (-math.pi / 2) + (r.isEven ? 0.18 : -0.18)
-            : (math.pi * 2 / count) * n + (r.isEven ? 0.24 : -0.22);
+        final localAngle =
+            count == 1
+                ? (-math.pi / 2) + (r.isEven ? 0.18 : -0.18)
+                : (math.pi * 2 / count) * n + (r.isEven ? 0.24 : -0.22);
         positions[node.id] = Offset(
           pocketCenter.dx + math.cos(localAngle) * localRing,
           pocketCenter.dy + math.sin(localAngle) * (localRing * 0.92),
@@ -756,10 +1010,18 @@ _GraphLayout _computeLayout(List<MemoryNodeVm> nodes) {
   }
 
   _relaxPositions(safeNodes, positions, root?.id);
-  return _GraphLayout(nodes: safeNodes, positions: positions, clusters: clusterMap);
+  return _GraphLayout(
+    nodes: safeNodes,
+    positions: positions,
+    clusters: clusterMap,
+  );
 }
 
-void _relaxPositions(List<MemoryNodeVm> nodes, Map<String, Offset> positions, String? rootId) {
+void _relaxPositions(
+  List<MemoryNodeVm> nodes,
+  Map<String, Offset> positions,
+  String? rootId,
+) {
   for (var iteration = 0; iteration < 120; iteration++) {
     var moved = false;
     for (var i = 0; i < nodes.length; i++) {
@@ -815,25 +1077,30 @@ Color _clusterColor(String raw) {
   final value = raw.trim().toLowerCase();
   if (value.contains('sport')) return const Color(0xFF38BDF8);
   if (value.contains('health')) return const Color(0xFFFB7185);
-  if (value.contains('software') || value.contains('work') || value.contains('project')) return const Color(0xFF8B5CF6);
+  if (value.contains('software') ||
+      value.contains('work') ||
+      value.contains('project'))
+    return const Color(0xFF8B5CF6);
   if (value.contains('learn')) return const Color(0xFF14B8A6);
   if (value.contains('finance')) return const Color(0xFFF59E0B);
   if (value.contains('relationship')) return const Color(0xFFF472B6);
   return const Color(0xFF60A5FA);
 }
 
-double _nodeRenderSize(MemoryNodeVm node) => node.isRoot ? 126.0 : _nodeRenderHeight(node);
+double _nodeRenderSize(MemoryNodeVm node) =>
+    node.isRoot ? 136.0 : _nodeRenderHeight(node);
 
 double _nodeRenderWidth(MemoryNodeVm node) {
-  if (node.isRoot) return 132.0;
-  final labelFactor = (node.label.trim().length * 4.8).clamp(0.0, 72.0);
-  final base = 94.0 + labelFactor + (node.info?.isNotEmpty == true ? 10.0 : 0.0);
-  return base.clamp(96.0, 172.0).toDouble();
+  if (node.isRoot) return 136.0;
+  final labelFactor = (node.label.trim().length * 5.2).clamp(0.0, 76.0);
+  final base =
+      98.0 + labelFactor + (node.info?.isNotEmpty == true ? 10.0 : 0.0);
+  return base.clamp(100.0, 180.0).toDouble();
 }
 
 double _nodeRenderHeight(MemoryNodeVm node) {
-  if (node.isRoot) return 132.0;
-  return (node.label.length > 26 ? 78.0 : 68.0).toDouble();
+  if (node.isRoot) return 136.0;
+  return 76.0;
 }
 
 class _NodeStyle {
@@ -842,7 +1109,12 @@ class _NodeStyle {
   final List<Color> fill;
   final Color text;
 
-  const _NodeStyle({required this.accent, required this.secondary, required this.fill, required this.text});
+  const _NodeStyle({
+    required this.accent,
+    required this.secondary,
+    required this.fill,
+    required this.text,
+  });
 }
 
 _NodeStyle _nodeStyle(MemoryNodeVm node) {
@@ -945,7 +1217,10 @@ class _NodeChip extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: LinearGradient(colors: style.fill),
           borderRadius: BorderRadius.circular(node.isRoot ? 999 : 22),
-          border: Border.all(color: style.accent.withOpacity(selected ? 0.95 : 0.42), width: selected ? 2.1 : 1.1),
+          border: Border.all(
+            color: style.accent.withOpacity(selected ? 0.95 : 0.42),
+            width: selected ? 2.1 : 1.1,
+          ),
         ),
         child: Stack(
           children: [
@@ -958,31 +1233,36 @@ class _NodeChip extends StatelessWidget {
                   height: 4,
                   decoration: BoxDecoration(
                     color: style.accent.withOpacity(0.96),
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(22),
+                    ),
                   ),
                 ),
               ),
             Positioned.fill(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(10, node.isRoot ? 12 : 12, 10, 10),
+                padding: EdgeInsets.fromLTRB(10, node.isRoot ? 12 : 10, 10, 8),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      node.label,
-                      textAlign: TextAlign.center,
-                      maxLines: node.isRoot ? 2 : 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: node.isRoot ? 13.8 : 12.0,
-                        fontWeight: FontWeight.w900,
-                        color: style.text,
-                        height: 1.14,
+                    Flexible(
+                      child: Text(
+                        node.label,
+                        textAlign: TextAlign.center,
+                        maxLines: node.isRoot ? 2 : 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: node.isRoot ? 13.8 : 12.0,
+                          fontWeight: FontWeight.w900,
+                          color: style.text,
+                          height: 1.18,
+                        ),
                       ),
                     ),
                     if (!node.isRoot) ...[
-                      const SizedBox(height: 7),
-                      _miniBadge(tag, style.secondary, maxWidth: 86),
+                      const SizedBox(height: 4),
+                      _miniBadge(tag, style.secondary, maxWidth: 90),
                     ],
                   ],
                 ),
@@ -1008,7 +1288,11 @@ class _NodeChip extends StatelessWidget {
           text,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(color: color.withOpacity(0.96), fontWeight: FontWeight.w800, fontSize: 10.2),
+          style: TextStyle(
+            color: color.withOpacity(0.96),
+            fontWeight: FontWeight.w800,
+            fontSize: 10.2,
+          ),
         ),
       ),
     );
@@ -1037,22 +1321,27 @@ class _BrainBackdropPainter extends CustomPainter {
   final _GraphLayout layout;
   final String? selectedNodeId;
 
-  const _BrainBackdropPainter({required this.layout, required this.selectedNodeId});
+  const _BrainBackdropPainter({
+    required this.layout,
+    required this.selectedNodeId,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     final rect = Offset.zero & size;
-    final bg = Paint()
-      ..shader = const LinearGradient(
-        colors: [Color(0xFF04101A), Color(0xFF08192A), Color(0xFF05111E)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ).createShader(rect);
+    final bg =
+        Paint()
+          ..shader = const LinearGradient(
+            colors: [Color(0xFF04101A), Color(0xFF08192A), Color(0xFF05111E)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ).createShader(rect);
     canvas.drawRect(rect, bg);
 
-    final grid = Paint()
-      ..color = Colors.white.withOpacity(0.035)
-      ..strokeWidth = 1;
+    final grid =
+        Paint()
+          ..color = Colors.white.withOpacity(0.035)
+          ..strokeWidth = 1;
     const step = 120.0;
     for (double x = 0; x < size.width; x += step) {
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), grid);
@@ -1062,20 +1351,26 @@ class _BrainBackdropPainter extends CustomPainter {
     }
 
     for (final cluster in layout.clusters.values) {
-      final aura = Paint()
-        ..shader = ui.Gradient.radial(
-          cluster.center,
-          cluster.radius,
-          [cluster.color.withOpacity(0.18), cluster.color.withOpacity(0.06), Colors.transparent],
-          const [0.0, 0.58, 1.0],
-        )
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 28);
+      final aura =
+          Paint()
+            ..shader = ui.Gradient.radial(
+              cluster.center,
+              cluster.radius,
+              [
+                cluster.color.withOpacity(0.18),
+                cluster.color.withOpacity(0.06),
+                Colors.transparent,
+              ],
+              const [0.0, 0.58, 1.0],
+            )
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 28);
       canvas.drawCircle(cluster.center, cluster.radius, aura);
 
-      final ring = Paint()
-        ..color = cluster.color.withOpacity(0.12)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.2;
+      final ring =
+          Paint()
+            ..color = cluster.color.withOpacity(0.12)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.2;
       canvas.drawCircle(cluster.center, cluster.radius * 0.84, ring);
 
       final labelPainter = TextPainter(
@@ -1090,13 +1385,20 @@ class _BrainBackdropPainter extends CustomPainter {
         ),
         textDirection: TextDirection.ltr,
       )..layout();
-      labelPainter.paint(canvas, Offset(cluster.center.dx - labelPainter.width / 2, cluster.center.dy - cluster.radius - 18));
+      labelPainter.paint(
+        canvas,
+        Offset(
+          cluster.center.dx - labelPainter.width / 2,
+          cluster.center.dy - cluster.radius - 18,
+        ),
+      );
     }
   }
 
   @override
   bool shouldRepaint(covariant _BrainBackdropPainter oldDelegate) {
-    return oldDelegate.layout != layout || oldDelegate.selectedNodeId != selectedNodeId;
+    return oldDelegate.layout != layout ||
+        oldDelegate.selectedNodeId != selectedNodeId;
   }
 }
 
@@ -1118,17 +1420,24 @@ class _GraphEdgePainter extends CustomPainter {
       final to = layout.positions[edge.toNodeId];
       if (from == null || to == null) continue;
       final style = _edgeStyle(edge.type);
-      final selectedTouch = selectedNodeId != null && (edge.fromNodeId == selectedNodeId || edge.toNodeId == selectedNodeId);
-      final paint = Paint()
-        ..color = style.color.withOpacity(selectedTouch ? math.max(0.88, style.opacity) : style.opacity)
-        ..strokeWidth = selectedTouch ? style.width + 0.8 : style.width
-        ..style = PaintingStyle.stroke;
+      final selectedTouch =
+          selectedNodeId != null &&
+          (edge.fromNodeId == selectedNodeId ||
+              edge.toNodeId == selectedNodeId);
+      final paint =
+          Paint()
+            ..color = style.color.withOpacity(
+              selectedTouch ? math.max(0.88, style.opacity) : style.opacity,
+            )
+            ..strokeWidth = selectedTouch ? style.width + 0.8 : style.width
+            ..style = PaintingStyle.stroke;
       final midpoint = Offset((from.dx + to.dx) / 2, (from.dy + to.dy) / 2);
       final curveLift = style.curveLift + (selectedTouch ? 10 : 0);
       final control = Offset(midpoint.dx, midpoint.dy - curveLift);
-      final path = Path()
-        ..moveTo(from.dx, from.dy)
-        ..quadraticBezierTo(control.dx, control.dy, to.dx, to.dy);
+      final path =
+          Path()
+            ..moveTo(from.dx, from.dy)
+            ..quadraticBezierTo(control.dx, control.dy, to.dx, to.dy);
 
       if (style.dashed) {
         _drawDashedPath(canvas, path, paint);
@@ -1141,7 +1450,9 @@ class _GraphEdgePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _GraphEdgePainter oldDelegate) {
-    return oldDelegate.layout != layout || oldDelegate.edges != edges || oldDelegate.selectedNodeId != selectedNodeId;
+    return oldDelegate.layout != layout ||
+        oldDelegate.edges != edges ||
+        oldDelegate.selectedNodeId != selectedNodeId;
   }
 }
 
@@ -1167,20 +1478,69 @@ _EdgeStyle _edgeStyle(String rawType) {
   final type = rawType.trim().toLowerCase();
   switch (type) {
     case 'part_of':
-      return const _EdgeStyle(color: Color(0xFFA78BFA), width: 2.4, opacity: 0.82, curveLift: 26, dashed: false, directional: true);
+      return const _EdgeStyle(
+        color: Color(0xFFA78BFA),
+        width: 2.4,
+        opacity: 0.82,
+        curveLift: 26,
+        dashed: false,
+        directional: true,
+      );
     case 'depends_on':
-      return const _EdgeStyle(color: Color(0xFF38BDF8), width: 2.6, opacity: 0.84, curveLift: 24, dashed: false, directional: true);
+      return const _EdgeStyle(
+        color: Color(0xFF38BDF8),
+        width: 2.6,
+        opacity: 0.84,
+        curveLift: 24,
+        dashed: false,
+        directional: true,
+      );
     case 'uses':
-      return const _EdgeStyle(color: Color(0xFF60A5FA), width: 2.2, opacity: 0.78, curveLift: 18, dashed: false, directional: true);
+      return const _EdgeStyle(
+        color: Color(0xFF60A5FA),
+        width: 2.2,
+        opacity: 0.78,
+        curveLift: 18,
+        dashed: false,
+        directional: true,
+      );
     case 'drives':
-      return const _EdgeStyle(color: Color(0xFFF59E0B), width: 2.4, opacity: 0.82, curveLift: 32, dashed: false, directional: true);
+      return const _EdgeStyle(
+        color: Color(0xFFF59E0B),
+        width: 2.4,
+        opacity: 0.82,
+        curveLift: 32,
+        dashed: false,
+        directional: true,
+      );
     case 'supports':
-      return const _EdgeStyle(color: Color(0xFF2DD4BF), width: 2.0, opacity: 0.74, curveLift: 18, dashed: false, directional: true);
+      return const _EdgeStyle(
+        color: Color(0xFF2DD4BF),
+        width: 2.0,
+        opacity: 0.74,
+        curveLift: 18,
+        dashed: false,
+        directional: true,
+      );
     case 'improves':
-      return const _EdgeStyle(color: Color(0xFF34D399), width: 1.9, opacity: 0.7, curveLift: 16, dashed: false, directional: true);
+      return const _EdgeStyle(
+        color: Color(0xFF34D399),
+        width: 1.9,
+        opacity: 0.7,
+        curveLift: 16,
+        dashed: false,
+        directional: true,
+      );
     case 'related_to':
     default:
-      return const _EdgeStyle(color: Color(0xFF94A3B8), width: 1.5, opacity: 0.48, curveLift: 14, dashed: true, directional: false);
+      return const _EdgeStyle(
+        color: Color(0xFF94A3B8),
+        width: 1.5,
+        opacity: 0.48,
+        curveLift: 14,
+        dashed: true,
+        directional: false,
+      );
   }
 }
 
@@ -1201,10 +1561,17 @@ void _drawDashedPath(Canvas canvas, Path path, Paint paint) {
 void _drawArrow(Canvas canvas, Offset from, Offset to, Paint paint) {
   final angle = math.atan2(to.dy - from.dy, to.dx - from.dx);
   const arrowSize = 8.0;
-  final path = Path()
-    ..moveTo(to.dx, to.dy)
-    ..lineTo(to.dx - arrowSize * math.cos(angle - math.pi / 6), to.dy - arrowSize * math.sin(angle - math.pi / 6))
-    ..moveTo(to.dx, to.dy)
-    ..lineTo(to.dx - arrowSize * math.cos(angle + math.pi / 6), to.dy - arrowSize * math.sin(angle + math.pi / 6));
+  final path =
+      Path()
+        ..moveTo(to.dx, to.dy)
+        ..lineTo(
+          to.dx - arrowSize * math.cos(angle - math.pi / 6),
+          to.dy - arrowSize * math.sin(angle - math.pi / 6),
+        )
+        ..moveTo(to.dx, to.dy)
+        ..lineTo(
+          to.dx - arrowSize * math.cos(angle + math.pi / 6),
+          to.dy - arrowSize * math.sin(angle + math.pi / 6),
+        );
   canvas.drawPath(path, paint);
 }

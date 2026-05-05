@@ -31,8 +31,8 @@ class _AiTranslationPageState extends State<AiTranslationPage> {
   bool _ttsPlaying = false;
 
   bool _isBusy = false;
-  String _sourceLang = 'Auto';
-  String _targetLang = 'English'; // default To = English
+  String _sourceLang = 'English';
+  String _targetLang = 'Hindi';
 
   String? _detectedLang;
   String? _output;
@@ -74,15 +74,25 @@ class _AiTranslationPageState extends State<AiTranslationPage> {
 
   /* ───────────── Languages & locales ───────────── */
 
-  // Keep a rich global list. "Auto" is only for the From picker.
   static const List<String> _allLanguages = [
     // Indian
-    'English', 'Hindi', 'Tamil', 'Telugu', 'Malayalam', 'Kannada', 'Bengali', 'Urdu',
+    'English',
+    'Hindi',
+    'Tamil',
+    'Telugu',
+    'Malayalam',
+    'Kannada',
+    'Bengali',
+    'Urdu',
     'Marathi', 'Gujarati', 'Punjabi',
     // Major world
     'Spanish', 'French', 'German', 'Arabic',
     'Chinese (Simplified)', 'Chinese (Traditional)', 'Japanese', 'Korean',
-    'Portuguese (Brazil)', 'Portuguese (Portugal)', 'Russian', 'Italian', 'Turkish',
+    'Portuguese (Brazil)',
+    'Portuguese (Portugal)',
+    'Russian',
+    'Italian',
+    'Turkish',
     'Vietnamese', 'Thai', 'Indonesian', 'Filipino (Tagalog)', 'Dutch',
     'Greek', 'Hebrew', 'Persian (Farsi)', 'Polish', 'Czech', 'Hungarian',
     'Romanian', 'Ukrainian', 'Swedish', 'Danish', 'Norwegian', 'Finnish',
@@ -140,7 +150,8 @@ class _AiTranslationPageState extends State<AiTranslationPage> {
   };
 
   String _ttsLocaleForLang(String name) => _ttsLocale[name] ?? 'en-US';
-  String _sttLocaleForLang(String name) => _ttsLocaleForLang(name).replaceAll('-', '_');
+  String _sttLocaleForLang(String name) =>
+      _ttsLocaleForLang(name).replaceAll('-', '_');
 
   Future<void> _applyTtsSettings(String langName) async {
     final locale = _ttsLocaleForLang(langName);
@@ -195,14 +206,13 @@ Return exactly one compact JSON object:
 
 Rules:
 - Handle informal speech, slang, typos, code-mixing (e.g., Hinglish/Tanglish), and fragments.
-- If "Source language" is "auto-detect", infer it from the text.
 - Keep "detected" as a human language name (e.g., "English", "Tamil").
 - If source and target are the same, paraphrase lightly in the target language/script.
 - Do not add explanations, code fences, or extra keys.
 ''';
 
     final user = '''
-Source language: ${_sourceLang == 'Auto' ? 'auto-detect' : _sourceLang}
+Source language: $_sourceLang
 Target language: $_targetLang
 
 Source text:
@@ -223,7 +233,9 @@ $text
         final start = raw.indexOf('{');
         final end = raw.lastIndexOf('}');
         if (start != -1 && end > start) {
-          data = json.decode(raw.substring(start, end + 1)) as Map<String, dynamic>;
+          data =
+              json.decode(raw.substring(start, end + 1))
+                  as Map<String, dynamic>;
         }
       }
 
@@ -235,25 +247,26 @@ $text
         _output = translation;
       });
 
-      TranslationHistoryStore.add(TranslationRecord(
-        sourceText: text,
-        detectedLang: detected,
-        targetLang: _targetLang,
-        translatedText: translation,
-        at: DateTime.now(),
-      ));
+      TranslationHistoryStore.add(
+        TranslationRecord(
+          sourceText: text,
+          detectedLang: detected,
+          targetLang: _targetLang,
+          translatedText: translation,
+          at: DateTime.now(),
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Translate failed: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Translate failed: $e')));
     } finally {
       if (mounted) setState(() => _isBusy = false);
     }
   }
 
   void _swap() {
-    if (_sourceLang == 'Auto') return;
     final s = _sourceLang;
     setState(() {
       _sourceLang = _targetLang;
@@ -274,28 +287,22 @@ $text
     // permission
     final micOk = await Permission.microphone.request().isGranted;
     if (!micOk) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Microphone permission denied.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Microphone permission denied.')),
+      );
       return;
     }
 
     // Initialize (safe to call repeatedly)
     await _speech.initialize(
-      onStatus: (s) => setState(() => _isListening = s != 'done' && s != 'notListening'),
+      onStatus:
+          (s) =>
+              setState(() => _isListening = s != 'done' && s != 'notListening'),
       onError: (_) => setState(() => _isListening = false),
     );
 
-    // Decide STT locale
-    String? localeId;
-    if (_sourceLang != 'Auto') {
-      localeId = _sttLocaleForLang(_sourceLang); // follow "From"
-    } else {
-      try {
-        final sys = await _speech.systemLocale();
-        localeId = sys?.localeId ?? 'en_US';
-      } catch (_) {
-        localeId = 'en_US';
-      }
-    }
+    // Decide STT locale from "From" language
+    final localeId = _sttLocaleForLang(_sourceLang);
 
     setState(() => _isListening = true);
 
@@ -306,7 +313,9 @@ $text
       onResult: (val) async {
         final words = val.recognizedWords.trim();
         _input.text = words;
-        _input.selection = TextSelection.fromPosition(TextPosition(offset: _input.text.length));
+        _input.selection = TextSelection.fromPosition(
+          TextPosition(offset: _input.text.length),
+        );
 
         if (val.finalResult) {
           await _speech.stop();
@@ -318,7 +327,9 @@ $text
   }
 
   Color _cardColor(BuildContext c) =>
-      Theme.of(c).brightness == Brightness.dark ? const Color(0xFF12151A) : Colors.white;
+      Theme.of(c).brightness == Brightness.dark
+          ? const Color(0xFF12151A)
+          : Colors.white;
 
   Color _softBorder(BuildContext c) {
     final isDark = Theme.of(c).brightness == Brightness.dark;
@@ -333,7 +344,8 @@ $text
     final screenH = MediaQuery.of(context).size.height;
     final inputMinH = screenH * 0.66; // ~2/3 screen
 
-    final clearBg = isDark ? Colors.white.withOpacity(.06) : Colors.black.withOpacity(.06);
+    final clearBg =
+        isDark ? Colors.white.withOpacity(.06) : Colors.black.withOpacity(.06);
     final clearFg = isDark ? Colors.white70 : Colors.black54;
 
     return Scaffold(
@@ -343,9 +355,9 @@ $text
           IconButton(
             tooltip: 'History',
             onPressed: () {
-              Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => const _HistoryScreen(),
-              ));
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const _HistoryScreen()));
             },
             icon: const Icon(Icons.history_rounded),
           ),
@@ -368,9 +380,17 @@ $text
                     border: Border.all(color: edge, width: 2),
                     boxShadow: [
                       if (isDark)
-                        BoxShadow(color: _kAccent.withOpacity(.14), blurRadius: 18, offset: const Offset(0, 8))
+                        BoxShadow(
+                          color: _kAccent.withOpacity(.14),
+                          blurRadius: 18,
+                          offset: const Offset(0, 8),
+                        )
                       else
-                        BoxShadow(color: Colors.black.withOpacity(.04), blurRadius: 16, offset: const Offset(0, 6)),
+                        BoxShadow(
+                          color: Colors.black.withOpacity(.04),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
                     ],
                   ),
                   child: TextField(
@@ -378,11 +398,17 @@ $text
                     focusNode: _inputFocus,
                     minLines: 8,
                     maxLines: null,
-                    style: TextStyle(fontSize: 16, height: 1.35, color: Theme.of(context).colorScheme.onSurface),
+                    style: TextStyle(
+                      fontSize: 16,
+                      height: 1.35,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                     decoration: InputDecoration(
                       hintText: 'Speak or type to translate…',
                       hintStyle: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(.6),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(.6),
                       ),
                       border: InputBorder.none,
                     ),
@@ -419,7 +445,9 @@ $text
                     onPressed: _isBusy ? null : _micCaptureOnly,
                     backgroundColor: _isListening ? Colors.redAccent : _kAccent,
                     foregroundColor: Colors.black,
-                    child: Icon(_isListening ? Icons.mic : Icons.mic_none_rounded),
+                    child: Icon(
+                      _isListening ? Icons.mic : Icons.mic_none_rounded,
+                    ),
                   ),
                 ),
                 // Translate
@@ -430,9 +458,14 @@ $text
                     heroTag: 'go',
                     onPressed: _isBusy ? null : () => _doTranslate(),
                     label: const Text('Translate'),
-                    icon: _isBusy
-                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Icon(Icons.arrow_forward_rounded),
+                    icon:
+                        _isBusy
+                            ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                            : const Icon(Icons.arrow_forward_rounded),
                     backgroundColor: _kAccent,
                     foregroundColor: Colors.black,
                   ),
@@ -448,7 +481,7 @@ $text
                   child: _LangPickerField(
                     label: 'From',
                     value: _sourceLang,
-                    allowAuto: true,
+                    allowAuto: false,
                     options: _allLanguages,
                     accent: _kAccent,
                     onPicked: (v) => setState(() => _sourceLang = v),
@@ -481,7 +514,8 @@ $text
                 isSpeaking: _ttsPlaying,
                 onCopy: () => Share.share(_output!),
                 onShare: () => Share.share(_output!),
-                onRegenerate: _isBusy ? null : () => _doTranslate(regenerate: true),
+                onRegenerate:
+                    _isBusy ? null : () => _doTranslate(regenerate: true),
                 onSpeakOrStop: _speakOrStop,
               ),
           ],
@@ -512,9 +546,10 @@ class _LangPickerField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final base = Theme.of(context).brightness == Brightness.dark
-        ? const Color(0xFF12151A)
-        : Colors.white;
+    final base =
+        Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF12151A)
+            : Colors.white;
 
     return InkWell(
       borderRadius: BorderRadius.circular(14),
@@ -527,12 +562,13 @@ class _LangPickerField extends StatelessWidget {
           shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
-          builder: (_) => _LanguageSearchSheet(
-            title: '$label language',
-            current: value,
-            options: allowAuto ? ['Auto', ...options] : options,
-            accent: accent,
-          ),
+          builder:
+              (_) => _LanguageSearchSheet(
+                title: '$label language',
+                current: value,
+                options: allowAuto ? ['Auto', ...options] : options,
+                accent: accent,
+              ),
         );
         if (picked != null) onPicked(picked);
       },
@@ -542,7 +578,10 @@ class _LangPickerField extends StatelessWidget {
           labelStyle: TextStyle(color: accent),
           filled: true,
           fillColor: base,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 12,
+          ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
             borderSide: BorderSide(color: accent.withOpacity(.5), width: 2),
@@ -590,18 +629,33 @@ class _LanguageSearchSheetState extends State<_LanguageSearchSheet> {
     final items = widget.options;
 
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           const SizedBox(height: 8),
-          Container(width: 40, height: 5, decoration: BoxDecoration(color: ring, borderRadius: BorderRadius.circular(999))),
+          Container(
+            width: 40,
+            height: 5,
+            decoration: BoxDecoration(
+              color: ring,
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
           const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Align(
               alignment: Alignment.centerLeft,
-              child: Text(widget.title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+              child: Text(
+                widget.title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 8),
@@ -631,8 +685,19 @@ class _LanguageSearchSheetState extends State<_LanguageSearchSheet> {
                 }
                 final active = lang == widget.current;
                 return ListTile(
-                  title: Text(lang, style: TextStyle(fontWeight: active ? FontWeight.w700 : FontWeight.w500)),
-                  trailing: active ? Icon(Icons.check_circle_rounded, color: widget.accent) : null,
+                  title: Text(
+                    lang,
+                    style: TextStyle(
+                      fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                    ),
+                  ),
+                  trailing:
+                      active
+                          ? Icon(
+                            Icons.check_circle_rounded,
+                            color: widget.accent,
+                          )
+                          : null,
                   onTap: () => Navigator.pop(context, lang),
                 );
               },
@@ -701,16 +766,26 @@ class _OutputCard extends StatelessWidget {
         border: Border.all(color: _kAccent, width: 2),
         boxShadow: [
           if (isDark)
-            BoxShadow(color: _kAccent.withOpacity(.12), blurRadius: 18, offset: const Offset(0, 10))
+            BoxShadow(
+              color: _kAccent.withOpacity(.12),
+              blurRadius: 18,
+              offset: const Offset(0, 10),
+            )
           else
-            BoxShadow(color: Colors.black.withOpacity(.04), blurRadius: 16, offset: const Offset(0, 8)),
+            BoxShadow(
+              color: Colors.black.withOpacity(.04),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Detected: $detectedLang  →  $targetLang',
-              style: TextStyle(color: _kAccent, fontWeight: FontWeight.w700)),
+          Text(
+            'Detected: $detectedLang  →  $targetLang',
+            style: TextStyle(color: _kAccent, fontWeight: FontWeight.w700),
+          ),
           const SizedBox(height: 8),
           SelectableText(
             text,
@@ -748,7 +823,11 @@ class _ChipBtn extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback? onTap;
-  const _ChipBtn({required this.icon, required this.label, required this.onTap});
+  const _ChipBtn({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -836,34 +915,38 @@ class _HistoryScreenState extends State<_HistoryScreen> {
           if (_selectMode) ...[
             IconButton(
               tooltip: 'Delete',
-              onPressed: _selected.isEmpty
-                  ? null
-                  : () {
-                      TranslationHistoryStore.removeMany(_selected);
-                      setState(() {
-                        _selected.clear();
-                        _selectMode = false;
-                      });
-                    },
+              onPressed:
+                  _selected.isEmpty
+                      ? null
+                      : () {
+                        TranslationHistoryStore.removeMany(_selected);
+                        setState(() {
+                          _selected.clear();
+                          _selectMode = false;
+                        });
+                      },
               icon: const Icon(Icons.delete_rounded),
             ),
             IconButton(
               tooltip: 'Share',
-              onPressed: _selected.isEmpty
-                  ? null
-                  : () {
-                      final items = _selected.toList()..sort();
-                      final all = TranslationHistoryStore.snapshot();
-                      final list = <TranslationRecord>[];
-                      for (final i in items) {
-                        if (i >= 0 && i < all.length) list.add(all[i]);
-                      }
-                      final text = list
-                          .map((r) =>
-                              '[${r.detectedLang} → ${r.targetLang}]\n${r.sourceText}\n→ ${r.translatedText}')
-                          .join('\n\n---\n\n');
-                      Share.share(text);
-                    },
+              onPressed:
+                  _selected.isEmpty
+                      ? null
+                      : () {
+                        final items = _selected.toList()..sort();
+                        final all = TranslationHistoryStore.snapshot();
+                        final list = <TranslationRecord>[];
+                        for (final i in items) {
+                          if (i >= 0 && i < all.length) list.add(all[i]);
+                        }
+                        final text = list
+                            .map(
+                              (r) =>
+                                  '[${r.detectedLang} → ${r.targetLang}]\n${r.sourceText}\n→ ${r.translatedText}',
+                            )
+                            .join('\n\n---\n\n');
+                        Share.share(text);
+                      },
               icon: const Icon(Icons.file_upload_outlined),
             ),
           ],
@@ -902,10 +985,20 @@ class _HistoryScreenState extends State<_HistoryScreen> {
                 child: Container(
                   padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF12151A) : Colors.white,
+                    color:
+                        Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFF12151A)
+                            : Colors.white,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: selected ? _kAccent : Colors.black12.withOpacity(Theme.of(context).brightness == Brightness.dark ? 0.0 : 1.0),
+                      color:
+                          selected
+                              ? _kAccent
+                              : Colors.black12.withOpacity(
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? 0.0
+                                    : 1.0,
+                              ),
                       width: selected ? 2 : 1,
                     ),
                   ),
@@ -937,7 +1030,9 @@ class _HistoryScreenState extends State<_HistoryScreen> {
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurface.withOpacity(.7),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withOpacity(.7),
                               ),
                             ),
                           ],
@@ -953,14 +1048,22 @@ class _HistoryScreenState extends State<_HistoryScreen> {
                         )
                       else
                         PopupMenuButton<String>(
-                          itemBuilder: (_) => const [
-                            PopupMenuItem(value: 'share', child: Text('Share')),
-                            PopupMenuItem(value: 'delete', child: Text('Delete')),
-                          ],
+                          itemBuilder:
+                              (_) => const [
+                                PopupMenuItem(
+                                  value: 'share',
+                                  child: Text('Share'),
+                                ),
+                                PopupMenuItem(
+                                  value: 'delete',
+                                  child: Text('Delete'),
+                                ),
+                              ],
                           onSelected: (v) {
                             if (v == 'share') {
                               Share.share(
-                                  '[${it.detectedLang} → ${it.targetLang}]\n${it.sourceText}\n→ ${it.translatedText}');
+                                '[${it.detectedLang} → ${it.targetLang}]\n${it.sourceText}\n→ ${it.translatedText}',
+                              );
                             } else if (v == 'delete') {
                               TranslationHistoryStore.removeMany({i});
                               setState(() {});

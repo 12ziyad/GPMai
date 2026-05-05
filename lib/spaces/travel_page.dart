@@ -57,7 +57,14 @@ class _TravelPageState extends State<TravelPage> with TickerProviderStateMixin {
 
   // Quick suggestions
   final _suggested = const [
-    'Bali', 'Singapore', 'Bangkok', 'Goa', 'Dubai', 'Kuala Lumpur', 'Sri Lanka', 'Paris'
+    'Bali',
+    'Singapore',
+    'Bangkok',
+    'Goa',
+    'Dubai',
+    'Kuala Lumpur',
+    'Sri Lanka',
+    'Paris',
   ];
 
   // Lightweight KV (uses SqlChatStore under the hood)
@@ -103,7 +110,9 @@ class _TravelPageState extends State<TravelPage> with TickerProviderStateMixin {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_activeTrip == null ? 'Travel' : 'Travel — ${_activeTrip!.title}'),
+        title: Text(
+          _activeTrip == null ? 'Travel' : 'Travel — ${_activeTrip!.title}',
+        ),
         actions: [
           // SAVE (blue) — saves to the active folder
           IconButton(
@@ -156,14 +165,16 @@ class _TravelPageState extends State<TravelPage> with TickerProviderStateMixin {
                             _RouteFields(
                               fromController: _from,
                               toController: _dest,
-                              onPickSuggestion: (v) => setState(() => _dest.text = v),
+                              onPickSuggestion:
+                                  (v) => setState(() => _dest.text = v),
                               suggestions: _suggested,
                             ),
                             const SizedBox(height: 10),
                             _DateRow(
-                              label: _range == null
-                                  ? 'Pick start and end'
-                                  : '${_d(_range!.start)} → ${_d(_range!.end)}  •  ${_nights(_range!)} nights',
+                              label:
+                                  _range == null
+                                      ? 'Pick start and end'
+                                      : '${_d(_range!.start)} → ${_d(_range!.end)}  •  ${_nights(_range!)} nights',
                               onTap: _pickDates,
                             ),
                             const SizedBox(height: 10),
@@ -171,19 +182,22 @@ class _TravelPageState extends State<TravelPage> with TickerProviderStateMixin {
                             _TravelersBudgetRow(
                               travelers: _travelers,
                               budgetPer: _budgetPerPerson,
-                              onTravelers: (v) => setState(() => _travelers = v),
-                              onBudget: (v) => setState(() => _budgetPerPerson = v),
+                              onTravelers:
+                                  (v) => setState(() => _travelers = v),
+                              onBudget:
+                                  (v) => setState(() => _budgetPerPerson = v),
                             ),
                             const SizedBox(height: 10),
                             _InterestChips(
                               values: _interests,
-                              onToggle: (v) => setState(() {
-                                if (_interests.contains(v)) {
-                                  _interests.remove(v);
-                                } else {
-                                  _interests.add(v);
-                                }
-                              }),
+                              onToggle:
+                                  (v) => setState(() {
+                                    if (_interests.contains(v)) {
+                                      _interests.remove(v);
+                                    } else {
+                                      _interests.add(v);
+                                    }
+                                  }),
                             ),
                             const SizedBox(height: 10),
 
@@ -198,69 +212,90 @@ class _TravelPageState extends State<TravelPage> with TickerProviderStateMixin {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Row(children: [
-                              Expanded(
-                                child: _PrimaryButton(
-                                  label: _generating ? 'Generating…' : 'Generate Itinerary',
-                                  icon: _generating
-                                      ? Icons.hourglass_bottom_rounded
-                                      : Icons.travel_explore_rounded,
-                                  onTap: _generating ? null : _generatePlan,
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _PrimaryButton(
+                                    label:
+                                        _generating
+                                            ? 'Generating…'
+                                            : 'Generate Itinerary',
+                                    icon:
+                                        _generating
+                                            ? Icons.hourglass_bottom_rounded
+                                            : Icons.travel_explore_rounded,
+                                    onTap: _generating ? null : _generatePlan,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: _PrimaryButton(
-                                  label: 'Customize',
-                                  icon: Icons.tune_rounded,
-                                  onTap: _planMd.isEmpty ? null : _openCustomize,
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: _PrimaryButton(
+                                    label: 'Customize',
+                                    icon: Icons.tune_rounded,
+                                    onTap:
+                                        _planMd.isEmpty ? null : _openCustomize,
+                                  ),
                                 ),
-                              ),
-                            ]),
+                              ],
+                            ),
                             if (_planMd.isNotEmpty) ...[
                               const SizedBox(height: 12),
-                              MarkdownBubble(text: _planMd, textColor: textColor, linkColor: _electricBlue),
+                              MarkdownBubble(
+                                text: _planMd,
+                                textColor: textColor,
+                                linkColor: _electricBlue,
+                              ),
                               const SizedBox(height: 12),
-                              Wrap(spacing: 10, runSpacing: 10, children: [
-                                _PillButton(
-                                  icon: Icons.edit_rounded,
-                                  label: 'Edit',
-                                  onTap: () async {
-                                    final edited = await _editText(context, _planMd, title: 'Edit Plan');
-                                    if (edited == null) return;
-                                    setState(() => _planMd = edited);
-                                    await _savePlanLocally();
-                                  },
-                                ),
-                                _PillButton(
-                                  icon: Icons.copy_rounded,
-                                  label: 'Copy',
-                                  onTap: () async {
-                                    await Clipboard.setData(ClipboardData(text: _planMd));
-                                    _toast('Copied');
-                                  },
-                                ),
-                                _PillButton(
-                                  icon: Icons.save_rounded,
-                                  label: 'Save',
-                                  onTap: _savePlanLocally,
-                                ),
-                                _PillButton(
-                                  icon: Icons.chat_bubble_rounded,
-                                  label: 'Save as Chat',
-                                  onTap: _savePlanAsChat,
-                                ),
-                                _PillButton(
-                                  icon: Icons.picture_as_pdf_rounded,
-                                  label: 'Export PDF',
-                                  onTap: _exportPlanPdf,
-                                ),
-                                _PillButton(
-                                  icon: Icons.delete_outline_rounded,
-                                  label: 'Delete',
-                                  onTap: () => setState(() => _planMd = ''),
-                                ),
-                              ]),
+                              Wrap(
+                                spacing: 10,
+                                runSpacing: 10,
+                                children: [
+                                  _PillButton(
+                                    icon: Icons.edit_rounded,
+                                    label: 'Edit',
+                                    onTap: () async {
+                                      final edited = await _editText(
+                                        context,
+                                        _planMd,
+                                        title: 'Edit Plan',
+                                      );
+                                      if (edited == null) return;
+                                      setState(() => _planMd = edited);
+                                      await _savePlanLocally();
+                                    },
+                                  ),
+                                  _PillButton(
+                                    icon: Icons.copy_rounded,
+                                    label: 'Copy',
+                                    onTap: () async {
+                                      await Clipboard.setData(
+                                        ClipboardData(text: _planMd),
+                                      );
+                                      _toast('Copied');
+                                    },
+                                  ),
+                                  _PillButton(
+                                    icon: Icons.save_rounded,
+                                    label: 'Save',
+                                    onTap: _savePlanLocally,
+                                  ),
+                                  _PillButton(
+                                    icon: Icons.chat_bubble_rounded,
+                                    label: 'Save as Chat',
+                                    onTap: _savePlanAsChat,
+                                  ),
+                                  _PillButton(
+                                    icon: Icons.picture_as_pdf_rounded,
+                                    label: 'Export PDF',
+                                    onTap: _exportPlanPdf,
+                                  ),
+                                  _PillButton(
+                                    icon: Icons.delete_outline_rounded,
+                                    label: 'Delete',
+                                    onTap: () => setState(() => _planMd = ''),
+                                  ),
+                                ],
+                              ),
                             ],
                           ],
                         ),
@@ -305,9 +340,14 @@ class _TravelPageState extends State<TravelPage> with TickerProviderStateMixin {
   }
 
   String _composeBrief() {
-    final from = _from.text.trim().isEmpty ? 'Unknown origin' : _from.text.trim();
-    final dest = _dest.text.trim().isEmpty ? 'Unknown destination' : _dest.text.trim();
-    final dates = _range == null ? 'Flexible dates' : '${_d(_range!.start)} to ${_d(_range!.end)} (${_nights(_range!)} nights)';
+    final from =
+        _from.text.trim().isEmpty ? 'Unknown origin' : _from.text.trim();
+    final dest =
+        _dest.text.trim().isEmpty ? 'Unknown destination' : _dest.text.trim();
+    final dates =
+        _range == null
+            ? 'Flexible dates'
+            : '${_d(_range!.start)} to ${_d(_range!.end)} (${_nights(_range!)} nights)';
     final crowd = '$_travelers traveler${_travelers > 1 ? 's' : ''}';
     final budget = '₹${_budgetPerPerson.round()} per person (approx.)';
     final interests = _interests.isEmpty ? 'General' : _interests.join(', ');
@@ -459,11 +499,12 @@ $_planMd
   Future<void> _openCustomize() async {
     final edited = await Navigator.of(context).push<String>(
       MaterialPageRoute(
-        builder: (_) => _CustomizePlanPage(
-          original: _lastAiPlan.isEmpty ? _planMd : _lastAiPlan,
-          current: _planMd,
-          onRegenerate: _regenerateSelection,
-        ),
+        builder:
+            (_) => _CustomizePlanPage(
+              original: _lastAiPlan.isEmpty ? _planMd : _lastAiPlan,
+              current: _planMd,
+              onRegenerate: _regenerateSelection,
+            ),
       ),
     );
     if (edited == null) return;
@@ -472,7 +513,10 @@ $_planMd
     await _savePlanLocally();
   }
 
-  Future<String> _regenerateSelection(String selection, String instructions) async {
+  Future<String> _regenerateSelection(
+    String selection,
+    String instructions,
+  ) async {
     final brief = _composeBrief();
     final prompt = '''
 Rewrite ONLY the following selection from a travel plan.
@@ -504,7 +548,11 @@ $selection
       return;
     }
     final store = SqlChatStore();
-    final title = _activeTrip?.title ?? (_dest.text.trim().isEmpty ? 'Trip Plan' : 'Trip: ${_dest.text.trim()}');
+    final title =
+        _activeTrip?.title ??
+        (_dest.text.trim().isEmpty
+            ? 'Trip Plan'
+            : 'Trip: ${_dest.text.trim()}');
     final chatId = await store.createChat(
       name: title,
       preset: {'kind': 'tool', 'id': 'travel'},
@@ -515,27 +563,34 @@ $selection
     await store.addMessage(chatId: chatId, role: 'gpm', text: _planMd);
 
     if (!mounted) return;
-    Navigator.of(context).push(PageRouteBuilder(
-      transitionDuration: const Duration(milliseconds: 280),
-      pageBuilder: (_, a1, __) => FadeTransition(
-        opacity: a1,
-        child: ChatPage(
-          userId: widget.userId,
-          chatId: chatId,
-          chatName: title,
-        ),
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 280),
+        pageBuilder:
+            (_, a1, __) => FadeTransition(
+              opacity: a1,
+              child: ChatPage(
+                userId: widget.userId,
+                chatId: chatId,
+                chatName: title,
+              ),
+            ),
       ),
-    ));
+    );
   }
 
   Future<void> _openAsChatPrompt() async {
     final store = SqlChatStore();
     final chatId = await store.createChat(
-      name: _dest.text.trim().isEmpty ? 'Travel Planner' : 'Plan ${_dest.text.trim()}',
+      name:
+          _dest.text.trim().isEmpty
+              ? 'Travel Planner'
+              : 'Plan ${_dest.text.trim()}',
       preset: {'kind': 'tool', 'id': 'travel'},
     );
 
-    final seed = '''
+    final seed =
+        '''
 Create a full, specific itinerary based on:
 
 ${_composeBrief()}
@@ -544,30 +599,31 @@ Return compact, actionable Markdown with: Quick Snapshot, Day-by-Day, Food & Nig
 '''.trim();
 
     if (!mounted) return;
-    Navigator.of(context).push(PageRouteBuilder(
-      transitionDuration: const Duration(milliseconds: 280),
-      pageBuilder: (_, a1, __) => FadeTransition(
-        opacity: a1,
-        child: ChatPage(
-          userId: widget.userId,
-          chatId: chatId,
-          chatName: 'Travel Planner',
-          seedUserText: seed,
-        ),
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 280),
+        pageBuilder:
+            (_, a1, __) => FadeTransition(
+              opacity: a1,
+              child: ChatPage(
+                userId: widget.userId,
+                chatId: chatId,
+                chatName: 'Travel Planner',
+                seedUserText: seed,
+              ),
+            ),
       ),
-    ));
+    );
   }
 
   Future<void> _openTrips() async {
     final res = await Navigator.push<_TripAction>(
       context,
       MaterialPageRoute(
-        builder: (_) => _TripsManagerPage(
-          currentDraft: _TripDraft(
-            dest: _dest.text.trim(),
-            range: _range,
-          ),
-        ),
+        builder:
+            (_) => _TripsManagerPage(
+              currentDraft: _TripDraft(dest: _dest.text.trim(), range: _range),
+            ),
       ),
     );
     if (res == null) return;
@@ -581,7 +637,9 @@ Return compact, actionable Markdown with: Quick Snapshot, Day-by-Day, Food & Nig
       _activeTrip = res.trip;
       await _kv.save('active_trip_id', _activeTrip!.id);
       if (mounted) setState(() {});
-    } else if (res.kind == _TripActionKind.deleted && _activeTrip != null && res.trip != null) {
+    } else if (res.kind == _TripActionKind.deleted &&
+        _activeTrip != null &&
+        res.trip != null) {
       if (_activeTrip!.id == res.trip!.id) {
         _activeTrip = null;
         await _kv.save('active_trip_id', '');
@@ -599,35 +657,38 @@ Return compact, actionable Markdown with: Quick Snapshot, Day-by-Day, Food & Nig
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => SafeArea(
-        child: Wrap(children: [
-          ListTile(
-            leading: const Icon(Icons.create_new_folder_rounded),
-            title: const Text('Create new page'),
-            onTap: () {
-              Navigator.pop(context);
-              _createFreshPage();
-            },
+      builder:
+          (_) => SafeArea(
+            child: Wrap(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.create_new_folder_rounded),
+                  title: const Text('Create new page'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _createFreshPage();
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.picture_as_pdf_rounded),
+                  title: const Text('Export plan as PDF'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _exportPlanPdf();
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.support_agent_rounded),
+                  title: const Text('Ask in chat'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _openAsChatPrompt();
+                  },
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
           ),
-          ListTile(
-            leading: const Icon(Icons.picture_as_pdf_rounded),
-            title: const Text('Export plan as PDF'),
-            onTap: () {
-              Navigator.pop(context);
-              _exportPlanPdf();
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.support_agent_rounded),
-            title: const Text('Ask in chat'),
-            onTap: () {
-              Navigator.pop(context);
-              _openAsChatPrompt();
-            },
-          ),
-          const SizedBox(height: 8),
-        ]),
-      ),
     );
   }
 
@@ -659,9 +720,10 @@ Return compact, actionable Markdown with: Quick Snapshot, Day-by-Day, Food & Nig
       _toast('Generate a plan first');
       return;
     }
-    final title = _activeTrip?.title.isNotEmpty == true
-        ? 'Trip Plan — ${_activeTrip!.title}'
-        : 'Trip Plan';
+    final title =
+        _activeTrip?.title.isNotEmpty == true
+            ? 'Trip Plan — ${_activeTrip!.title}'
+            : 'Trip Plan';
 
     final doc = sf.PdfDocument();
     final page = doc.pages.add();
@@ -692,7 +754,13 @@ Return compact, actionable Markdown with: Quick Snapshot, Day-by-Day, Food & Nig
     final bytes = Uint8List.fromList(raw); // <-- convert to Uint8List
 
     await Share.shareXFiles(
-      [XFile.fromData(bytes, name: 'trip_plan.pdf', mimeType: 'application/pdf')],
+      [
+        XFile.fromData(
+          bytes,
+          name: 'trip_plan.pdf',
+          mimeType: 'application/pdf',
+        ),
+      ],
       subject: title,
       text: 'Trip plan PDF',
     );
@@ -752,7 +820,10 @@ class _ToolsGrid extends StatelessWidget {
             shrinkWrap: true,
             itemCount: items.length,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3, mainAxisExtent: 112, crossAxisSpacing: 12, mainAxisSpacing: 12,
+              crossAxisCount: 3,
+              mainAxisExtent: 112,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
             ),
             itemBuilder: (_, i) {
               final it = items[i];
@@ -762,30 +833,42 @@ class _ToolsGrid extends StatelessWidget {
                   final dest = destGetter();
                   final trip = activeTrip;
                   if (it.id == 'packing') {
-                    await Navigator.push(context, MaterialPageRoute(
-                      builder: (_) => _PackingListPage(
-                        destHint: dest,
-                        brief: composeBrief(),
-                        trip: trip,
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (_) => _PackingListPage(
+                              destHint: dest,
+                              brief: composeBrief(),
+                              trip: trip,
+                            ),
                       ),
-                    ));
+                    );
                     return;
                   }
                   if (it.id == 'visa') {
-                    await Navigator.push(context, MaterialPageRoute(
-                      builder: (_) => _VisaDocsPage(userId: userId, trip: trip),
-                    ));
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (_) => _VisaDocsPage(userId: userId, trip: trip),
+                      ),
+                    );
                     return;
                   }
-                  await Navigator.push(context, MaterialPageRoute(
-                    builder: (_) => _SmartToolPage(
-                      toolId: it.id,
-                      title: it.title,
-                      destHint: dest,
-                      brief: composeBrief(),
-                      trip: trip,
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (_) => _SmartToolPage(
+                            toolId: it.id,
+                            title: it.title,
+                            destHint: dest,
+                            brief: composeBrief(),
+                            trip: trip,
+                          ),
                     ),
-                  ));
+                  );
                 },
               );
             },
@@ -830,10 +913,17 @@ class _TravelersBudgetRow extends StatelessWidget {
               const CircleAvatar(
                 radius: 16,
                 backgroundColor: Color(0x2A00B8FF),
-                child: Icon(Icons.group_rounded, color: _electricBlue, size: 18),
+                child: Icon(
+                  Icons.group_rounded,
+                  color: _electricBlue,
+                  size: 18,
+                ),
               ),
               const SizedBox(width: 10),
-              const Text('Travelers', style: TextStyle(fontWeight: FontWeight.w700)),
+              const Text(
+                'Travelers',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
               const Spacer(),
               _RoundIcon(
                 onTap: travelers > 1 ? () => onTravelers(travelers - 1) : null,
@@ -841,9 +931,15 @@ class _TravelersBudgetRow extends StatelessWidget {
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Text('$travelers', style: const TextStyle(fontWeight: FontWeight.w800)),
+                child: Text(
+                  '$travelers',
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
               ),
-              _RoundIcon(onTap: () => onTravelers(travelers + 1), icon: Icons.add_rounded),
+              _RoundIcon(
+                onTap: () => onTravelers(travelers + 1),
+                icon: Icons.add_rounded,
+              ),
             ],
           ),
           const SizedBox(height: 10),
@@ -859,7 +955,10 @@ class _TravelersBudgetRow extends StatelessWidget {
                   },
                   borderRadius: BorderRadius.circular(12),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: _electricBlue,
                       borderRadius: BorderRadius.circular(12),
@@ -868,14 +967,21 @@ class _TravelersBudgetRow extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.account_balance_wallet_rounded, color: Colors.black, size: 18),
+                        const Icon(
+                          Icons.account_balance_wallet_rounded,
+                          color: Colors.black,
+                          size: 18,
+                        ),
                         const SizedBox(width: 8),
                         Flexible(
                           child: Text(
                             'Budget per person: ₹${budgetPer.round()}',
                             overflow: TextOverflow.ellipsis,
                             maxLines: 1,
-                            style: const TextStyle(fontWeight: FontWeight.w800, color: Colors.black),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              color: Colors.black,
+                            ),
                           ),
                         ),
                       ],
@@ -884,8 +990,10 @@ class _TravelersBudgetRow extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              Text('Total ≈ ₹${(budgetPer * travelers).round()}',
-                  style: const TextStyle(fontWeight: FontWeight.w700)),
+              Text(
+                'Total ≈ ₹${(budgetPer * travelers).round()}',
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
             ],
           ),
         ],
@@ -897,24 +1005,31 @@ class _TravelersBudgetRow extends StatelessWidget {
     final c = TextEditingController(text: current.round().toString());
     return showDialog<double>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Budget per person (INR)'),
-        content: TextField(
-          controller: c,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(border: OutlineInputBorder(), hintText: 'e.g. 30000'),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () {
-              final n = double.tryParse(c.text.trim());
-              Navigator.pop(context, n);
-            },
-            child: const Text('Set'),
+      builder:
+          (_) => AlertDialog(
+            title: const Text('Budget per person (INR)'),
+            content: TextField(
+              controller: c,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                hintText: 'e.g. 30000',
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  final n = double.tryParse(c.text.trim());
+                  Navigator.pop(context, n);
+                },
+                child: const Text('Set'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 }
@@ -971,21 +1086,25 @@ class _RouteFields extends StatelessWidget {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: suggestions.map((s) {
-            return InkWell(
-              borderRadius: BorderRadius.circular(18),
-              onTap: () => onPickSuggestion(s),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: cs.surfaceVariant.withOpacity(.18),
+          children:
+              suggestions.map((s) {
+                return InkWell(
                   borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: cs.onSurface.withOpacity(.18)),
-                ),
-                child: Text(s),
-              ),
-            );
-          }).toList(),
+                  onTap: () => onPickSuggestion(s),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: cs.surfaceVariant.withOpacity(.18),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: cs.onSurface.withOpacity(.18)),
+                    ),
+                    child: Text(s),
+                  ),
+                );
+              }).toList(),
         ),
       ],
     );
@@ -998,7 +1117,11 @@ class _PackingListPage extends StatefulWidget {
   final String destHint;
   final String brief;
   final _Trip? trip;
-  const _PackingListPage({required this.destHint, required this.brief, required this.trip});
+  const _PackingListPage({
+    required this.destHint,
+    required this.brief,
+    required this.trip,
+  });
 
   @override
   State<_PackingListPage> createState() => _PackingListPageState();
@@ -1046,7 +1169,11 @@ Answer in **English only**.
     try {
       final out = await GPMaiBrain.send(ask);
       setState(() => _organizedMd = _stripMood(out).trim());
-      await _ts.saveValue(widget.trip?.id, _k('packing_organized'), _organizedMd);
+      await _ts.saveValue(
+        widget.trip?.id,
+        _k('packing_organized'),
+        _organizedMd,
+      );
     } catch (e) {
       _snack('Error: $e');
     } finally {
@@ -1080,7 +1207,11 @@ $raw
     try {
       final out = await GPMaiBrain.send(ask);
       setState(() => _organizedMd = _stripMood(out).trim());
-      await _ts.saveValue(widget.trip?.id, _k('packing_organized'), _organizedMd);
+      await _ts.saveValue(
+        widget.trip?.id,
+        _k('packing_organized'),
+        _organizedMd,
+      );
     } catch (e) {
       _snack('Error: $e');
     } finally {
@@ -1094,30 +1225,41 @@ $raw
     final isLight = Theme.of(context).brightness == Brightness.light;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Packing List'), actions: [
-        IconButton(
-          tooltip: 'Save',
-          icon: const Icon(Icons.save_rounded),
-          onPressed: () async {
-            await _ts.saveValue(widget.trip?.id, _k('packing_notes'), _notesCtrl.text);
-            await _ts.saveValue(widget.trip?.id, _k('packing_organized'), _organizedMd);
-            _snack('Saved');
-          },
-        ),
-        IconButton(
-          tooltip: 'Delete',
-          icon: const Icon(Icons.delete_outline_rounded),
-          onPressed: () async {
-            setState(() {
-              _notesCtrl.clear();
-              _organizedMd = '';
-            });
-            await _ts.saveValue(widget.trip?.id, _k('packing_notes'), '');
-            await _ts.saveValue(widget.trip?.id, _k('packing_organized'), '');
-            _snack('Cleared');
-          },
-        ),
-      ]),
+      appBar: AppBar(
+        title: const Text('Packing List'),
+        actions: [
+          IconButton(
+            tooltip: 'Save',
+            icon: const Icon(Icons.save_rounded),
+            onPressed: () async {
+              await _ts.saveValue(
+                widget.trip?.id,
+                _k('packing_notes'),
+                _notesCtrl.text,
+              );
+              await _ts.saveValue(
+                widget.trip?.id,
+                _k('packing_organized'),
+                _organizedMd,
+              );
+              _snack('Saved');
+            },
+          ),
+          IconButton(
+            tooltip: 'Delete',
+            icon: const Icon(Icons.delete_outline_rounded),
+            onPressed: () async {
+              setState(() {
+                _notesCtrl.clear();
+                _organizedMd = '';
+              });
+              await _ts.saveValue(widget.trip?.id, _k('packing_notes'), '');
+              await _ts.saveValue(widget.trip?.id, _k('packing_organized'), '');
+              _snack('Cleared');
+            },
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 20),
         children: [
@@ -1125,41 +1267,49 @@ $raw
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text('Your Notes', style: TextStyle(fontWeight: FontWeight.w800)),
+                const Text(
+                  'Your Notes',
+                  style: TextStyle(fontWeight: FontWeight.w800),
+                ),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _notesCtrl,
                   minLines: 6,
                   maxLines: 10,
                   decoration: const InputDecoration(
-                    hintText: 'Type everything you plan to bring… One item per line is easiest.',
+                    hintText:
+                        'Type everything you plan to bring… One item per line is easiest.',
                     border: OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 8),
-                Row(children: [
-                  Expanded(
-                    child: _PrimaryButton(
-                      label: _busy ? 'Working…' : 'Organize List',
-                      icon: Icons.auto_awesome_rounded,
-                      onTap: _busy ? null : _organizeFreeform,
+                Row(
+                  children: [
+                    Expanded(
+                      child: _PrimaryButton(
+                        label: _busy ? 'Working…' : 'Organize List',
+                        icon: Icons.auto_awesome_rounded,
+                        onTap: _busy ? null : _organizeFreeform,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _PrimaryButton(
-                      label: _busy ? 'Working…' : 'Generate with AI',
-                      icon: Icons.lightbulb_rounded,
-                      onTap: _busy ? null : _seedFromAI,
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _PrimaryButton(
+                        label: _busy ? 'Working…' : 'Generate with AI',
+                        icon: Icons.lightbulb_rounded,
+                        onTap: _busy ? null : _seedFromAI,
+                      ),
                     ),
-                  ),
-                ]),
+                  ],
+                ),
                 const SizedBox(height: 4),
                 Align(
                   alignment: Alignment.center,
                   child: Text(
                     'Drop or type anything here — I’ll sort it for you.',
-                    style: TextStyle(color: isLight ? Colors.black54 : Colors.white60),
+                    style: TextStyle(
+                      color: isLight ? Colors.black54 : Colors.white60,
+                    ),
                   ),
                 ),
               ],
@@ -1171,13 +1321,22 @@ $raw
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Row(children: [
-                    Icon(Icons.luggage_rounded, color: cs.primary),
-                    const SizedBox(width: 8),
-                    const Text('Organized Packing List', style: TextStyle(fontWeight: FontWeight.w800)),
-                  ]),
+                  Row(
+                    children: [
+                      Icon(Icons.luggage_rounded, color: cs.primary),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Organized Packing List',
+                        style: TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 8),
-                  MarkdownBubble(text: _organizedMd, textColor: isLight ? Colors.black87 : Colors.white, linkColor: _electricBlue),
+                  MarkdownBubble(
+                    text: _organizedMd,
+                    textColor: isLight ? Colors.black87 : Colors.white,
+                    linkColor: _electricBlue,
+                  ),
                 ],
               ),
             ),
@@ -1186,7 +1345,8 @@ $raw
     );
   }
 
-  void _snack(String m) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+  void _snack(String m) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
   static String _stripMood(String s) =>
       s.replaceAll(RegExp(r'\\[mood:[^\\]]*\\]', caseSensitive: false), '');
 }
@@ -1223,7 +1383,10 @@ class _VisaDocsPageState extends State<_VisaDocsPage> {
     if (s != null && s.isNotEmpty) {
       try {
         final arr = (jsonDecode(s) as List).cast<Map>();
-        _docs = arr.map((m) => _DocItem.fromJson(Map<String, dynamic>.from(m))).toList();
+        _docs =
+            arr
+                .map((m) => _DocItem.fromJson(Map<String, dynamic>.from(m)))
+                .toList();
       } catch (_) {}
     }
     if (mounted) setState(() {});
@@ -1236,11 +1399,21 @@ class _VisaDocsPageState extends State<_VisaDocsPage> {
 
   Future<void> _addFromCamera() async {
     try {
-      final x = await _picker.pickImage(source: ImageSource.camera, imageQuality: 85);
+      final x = await _picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85,
+      );
       if (x == null) return;
       final f = File(x.path);
       final name = 'scan_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      _docs.add(_DocItem(name: name, path: f.path, mime: 'image/jpeg', ts: DateTime.now().millisecondsSinceEpoch));
+      _docs.add(
+        _DocItem(
+          name: name,
+          path: f.path,
+          mime: 'image/jpeg',
+          ts: DateTime.now().millisecondsSinceEpoch,
+        ),
+      );
       await _persist();
       if (mounted) setState(() {});
     } catch (e) {
@@ -1255,7 +1428,14 @@ class _VisaDocsPageState extends State<_VisaDocsPage> {
       for (final f in res.files) {
         if (f.path == null) continue;
         final mime = _guessMime(f.name.toLowerCase());
-        _docs.add(_DocItem(name: f.name, path: f.path!, mime: mime, ts: DateTime.now().millisecondsSinceEpoch));
+        _docs.add(
+          _DocItem(
+            name: f.name,
+            path: f.path!,
+            mime: mime,
+            ts: DateTime.now().millisecondsSinceEpoch,
+          ),
+        );
       }
       await _persist();
       if (mounted) setState(() {});
@@ -1297,23 +1477,28 @@ class _VisaDocsPageState extends State<_VisaDocsPage> {
       preset: {'kind': 'tool', 'id': 'travel_docs'},
     );
     if (!mounted) return;
-    Navigator.push(context, MaterialPageRoute(
-      builder: (_) => ChatPage(
-        userId: widget.userId,
-        chatId: chatId,
-        chatName: 'Doc: ${d.name}',
-        initialAttachments: [seed],
-        autoSendInitialAttachments: true,
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (_) => ChatPage(
+              userId: widget.userId,
+              chatId: chatId,
+              chatName: 'Doc: ${d.name}',
+              initialAttachments: [seed],
+              autoSendInitialAttachments: true,
+            ),
       ),
-    ));
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final query = _search.text.trim().toLowerCase();
-    final filtered = query.isEmpty
-        ? _docs
-        : _docs.where((d) => d.name.toLowerCase().contains(query)).toList();
+    final filtered =
+        query.isEmpty
+            ? _docs
+            : _docs.where((d) => d.name.toLowerCase().contains(query)).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -1321,35 +1506,45 @@ class _VisaDocsPageState extends State<_VisaDocsPage> {
         actions: [
           IconButton(
             tooltip: 'Send to Chat',
-            onPressed: filtered.isEmpty
-                ? null
-                : () async {
-                    final picked = _selected.isEmpty ? filtered : filtered.where((d) => _selected.contains(d.path)).toList();
-                    if (picked.isEmpty) {
-                      _snack('Select documents first');
-                      return;
-                    }
-                    final store = SqlChatStore();
-                    final chatId = await store.createChat(
-                      name: 'Docs',
-                      preset: {'kind': 'tool', 'id': 'travel_docs'},
-                    );
-                    final seeds = <AttachmentSeed>[];
-                    for (final d in picked) {
-                      final seed = await _buildSeed(d);
-                      if (seed != null) seeds.add(seed);
-                    }
-                    if (!mounted) return;
-                    Navigator.push(context, MaterialPageRoute(
-                      builder: (_) => ChatPage(
-                        userId: widget.userId,
-                        chatId: chatId,
-                        chatName: 'Docs',
-                        initialAttachments: seeds,
-                        autoSendInitialAttachments: true,
-                      ),
-                    ));
-                  },
+            onPressed:
+                filtered.isEmpty
+                    ? null
+                    : () async {
+                      final picked =
+                          _selected.isEmpty
+                              ? filtered
+                              : filtered
+                                  .where((d) => _selected.contains(d.path))
+                                  .toList();
+                      if (picked.isEmpty) {
+                        _snack('Select documents first');
+                        return;
+                      }
+                      final store = SqlChatStore();
+                      final chatId = await store.createChat(
+                        name: 'Docs',
+                        preset: {'kind': 'tool', 'id': 'travel_docs'},
+                      );
+                      final seeds = <AttachmentSeed>[];
+                      for (final d in picked) {
+                        final seed = await _buildSeed(d);
+                        if (seed != null) seeds.add(seed);
+                      }
+                      if (!mounted) return;
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (_) => ChatPage(
+                                userId: widget.userId,
+                                chatId: chatId,
+                                chatName: 'Docs',
+                                initialAttachments: seeds,
+                                autoSendInitialAttachments: true,
+                              ),
+                        ),
+                      );
+                    },
             icon: const Icon(Icons.send_rounded),
           ),
         ],
@@ -1360,24 +1555,34 @@ class _VisaDocsPageState extends State<_VisaDocsPage> {
           _Card(
             child: Column(
               children: [
-                Row(children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _search,
-                      onChanged: (_) => setState(() {}),
-                      textInputAction: TextInputAction.search,
-                      decoration: const InputDecoration(
-                        hintText: 'Search (e.g. passport, visa, photo)…',
-                        prefixIcon: Icon(Icons.search_rounded),
-                        border: OutlineInputBorder(),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _search,
+                        onChanged: (_) => setState(() {}),
+                        textInputAction: TextInputAction.search,
+                        decoration: const InputDecoration(
+                          hintText: 'Search (e.g. passport, visa, photo)…',
+                          prefixIcon: Icon(Icons.search_rounded),
+                          border: OutlineInputBorder(),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  _IconBtn(icon: Icons.photo_camera_rounded, onTap: _addFromCamera, tooltip: 'Camera'),
-                  const SizedBox(width: 6),
-                  _IconBtn(icon: Icons.upload_file_rounded, onTap: _addFromFiles, tooltip: 'Upload'),
-                ]),
+                    const SizedBox(width: 8),
+                    _IconBtn(
+                      icon: Icons.photo_camera_rounded,
+                      onTap: _addFromCamera,
+                      tooltip: 'Camera',
+                    ),
+                    const SizedBox(width: 6),
+                    _IconBtn(
+                      icon: Icons.upload_file_rounded,
+                      onTap: _addFromFiles,
+                      tooltip: 'Upload',
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 10),
                 _DropZone(onTap: _addFromFiles),
               ],
@@ -1391,33 +1596,36 @@ class _VisaDocsPageState extends State<_VisaDocsPage> {
               child: Wrap(
                 spacing: 10,
                 runSpacing: 10,
-                children: filtered.map((d) {
-                  final selected = _selected.contains(d.path);
-                  return _DocBubble(
-                    item: d,
-                    selected: selected,
-                    onToggle: () async {
-                      if (_selected.isEmpty) {
-                        await _openSingleInChat(d); // open chat & auto-send this file
-                      } else {
-                        setState(() {
-                          if (selected) {
-                            _selected.remove(d.path);
+                children:
+                    filtered.map((d) {
+                      final selected = _selected.contains(d.path);
+                      return _DocBubble(
+                        item: d,
+                        selected: selected,
+                        onToggle: () async {
+                          if (_selected.isEmpty) {
+                            await _openSingleInChat(
+                              d,
+                            ); // open chat & auto-send this file
                           } else {
-                            _selected.add(d.path);
+                            setState(() {
+                              if (selected) {
+                                _selected.remove(d.path);
+                              } else {
+                                _selected.add(d.path);
+                              }
+                            });
                           }
-                        });
-                      }
-                    },
-                    onDelete: () async {
-                      setState(() {
-                        _docs.removeWhere((x) => x.path == d.path);
-                        _selected.remove(d.path);
-                      });
-                      await _persist();
-                    },
-                  );
-                }).toList(),
+                        },
+                        onDelete: () async {
+                          setState(() {
+                            _docs.removeWhere((x) => x.path == d.path);
+                            _selected.remove(d.path);
+                          });
+                          await _persist();
+                        },
+                      );
+                    }).toList(),
               ),
             ),
         ],
@@ -1425,7 +1633,8 @@ class _VisaDocsPageState extends State<_VisaDocsPage> {
     );
   }
 
-  void _snack(String m) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+  void _snack(String m) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 }
 
 /* ───────────────────────── SMART TOOL PAGE (asks user first) ───────────────────────── */
@@ -1473,11 +1682,16 @@ class _SmartToolPageState extends State<_SmartToolPage> {
   }
 
   String _buildAsk() {
-    final place = _loc.text.trim().isEmpty ? 'the destination' : _loc.text.trim();
-    final when = _dates == null ? 'any time' : '${_d(_dates!.start)} to ${_d(_dates!.end)}';
+    final place =
+        _loc.text.trim().isEmpty ? 'the destination' : _loc.text.trim();
+    final when =
+        _dates == null
+            ? 'any time'
+            : '${_d(_dates!.start)} to ${_d(_dates!.end)}';
     final extra = _extra.text.trim();
 
-    String suffix = '\n${extra.isEmpty ? '' : 'Notes: $extra\n'}Answer in **English only**.';
+    String suffix =
+        '\n${extra.isEmpty ? '' : 'Notes: $extra\n'}Answer in **English only**.';
 
     switch (widget.toolId) {
       case 'safety':
@@ -1575,17 +1789,28 @@ $suffix
           IconButton(
             tooltip: 'Save',
             icon: const Icon(Icons.save_rounded, color: _electricBlue),
-            onPressed: _out.isEmpty ? null : () async {
-              await _ts.saveValue(widget.trip?.id, 'tool_${widget.toolId}_last', _out);
-              _snack('Saved');
-            },
+            onPressed:
+                _out.isEmpty
+                    ? null
+                    : () async {
+                      await _ts.saveValue(
+                        widget.trip?.id,
+                        'tool_${widget.toolId}_last',
+                        _out,
+                      );
+                      _snack('Saved');
+                    },
           ),
           IconButton(
             tooltip: 'Delete',
             icon: const Icon(Icons.delete_outline_rounded),
             onPressed: () async {
               setState(() => _out = '');
-              await _ts.saveValue(widget.trip?.id, 'tool_${widget.toolId}_last', '');
+              await _ts.saveValue(
+                widget.trip?.id,
+                'tool_${widget.toolId}_last',
+                '',
+              );
             },
           ),
         ],
@@ -1598,36 +1823,49 @@ $suffix
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _Labeled('Location', child: TextField(
-                  controller: _loc,
-                  textInputAction: TextInputAction.done,
-                  decoration: const InputDecoration(
-                    hintText: 'e.g., Singapore, Bali, Paris…',
-                    border: OutlineInputBorder(),
+                _Labeled(
+                  'Location',
+                  child: TextField(
+                    controller: _loc,
+                    textInputAction: TextInputAction.done,
+                    decoration: const InputDecoration(
+                      hintText: 'e.g., Singapore, Bali, Paris…',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
-                )),
+                ),
                 const SizedBox(height: 8),
-                _Labeled('Date range (optional)', child: _DateInline(
-                  label: _dates == null ? 'Pick dates' : '${_d(_dates!.start)} → ${_d(_dates!.end)}',
-                  onPick: () async {
-                    final now = DateTime.now();
-                    final picked = await showDateRangePicker(
-                      context: context,
-                      firstDate: now,
-                      lastDate: DateTime(now.year + 2),
-                    );
-                    if (!mounted) return;
-                    setState(() => _dates = picked);
-                  },
-                )),
-                const SizedBox(height: 8),
-                _Labeled('Extra preferences (optional)', child: TextField(
-                  controller: _extra,
-                  decoration: const InputDecoration(
-                    hintText: 'Diet, kid-friendly, budget notes, areas to focus/avoid…',
-                    border: OutlineInputBorder(),
+                _Labeled(
+                  'Date range (optional)',
+                  child: _DateInline(
+                    label:
+                        _dates == null
+                            ? 'Pick dates'
+                            : '${_d(_dates!.start)} → ${_d(_dates!.end)}',
+                    onPick: () async {
+                      final now = DateTime.now();
+                      final picked = await showDateRangePicker(
+                        context: context,
+                        firstDate: now,
+                        lastDate: DateTime(now.year + 2),
+                      );
+                      if (!mounted) return;
+                      setState(() => _dates = picked);
+                    },
                   ),
-                )),
+                ),
+                const SizedBox(height: 8),
+                _Labeled(
+                  'Extra preferences (optional)',
+                  child: TextField(
+                    controller: _extra,
+                    decoration: const InputDecoration(
+                      hintText:
+                          'Diet, kid-friendly, budget notes, areas to focus/avoid…',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 10),
                 _PrimaryButton(
                   label: _busy ? 'Working…' : 'Generate',
@@ -1649,34 +1887,50 @@ $suffix
                     linkColor: _electricBlue,
                   ),
                   const SizedBox(height: 10),
-                  Wrap(spacing: 10, runSpacing: 10, children: [
-                    _PillButton(
-                      icon: Icons.edit_rounded,
-                      label: 'Edit',
-                      onTap: () async {
-                        final edited = await _editText(context, _out, title: 'Edit "${widget.title}"');
-                        if (edited == null) return;
-                        setState(() => _out = edited);
-                        await _ts.saveValue(widget.trip?.id, 'tool_${widget.toolId}_last', _out);
-                      },
-                    ),
-                    _PillButton(
-                      icon: Icons.copy_rounded,
-                      label: 'Copy',
-                      onTap: () async {
-                        await Clipboard.setData(ClipboardData(text: _out));
-                        _snack('Copied');
-                      },
-                    ),
-                    _PillButton(
-                      icon: Icons.save_rounded,
-                      label: 'Save',
-                      onTap: () async {
-                        await _ts.saveValue(widget.trip?.id, 'tool_${widget.toolId}_last', _out);
-                        _snack('Saved');
-                      },
-                    ),
-                  ]),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      _PillButton(
+                        icon: Icons.edit_rounded,
+                        label: 'Edit',
+                        onTap: () async {
+                          final edited = await _editText(
+                            context,
+                            _out,
+                            title: 'Edit "${widget.title}"',
+                          );
+                          if (edited == null) return;
+                          setState(() => _out = edited);
+                          await _ts.saveValue(
+                            widget.trip?.id,
+                            'tool_${widget.toolId}_last',
+                            _out,
+                          );
+                        },
+                      ),
+                      _PillButton(
+                        icon: Icons.copy_rounded,
+                        label: 'Copy',
+                        onTap: () async {
+                          await Clipboard.setData(ClipboardData(text: _out));
+                          _snack('Copied');
+                        },
+                      ),
+                      _PillButton(
+                        icon: Icons.save_rounded,
+                        label: 'Save',
+                        onTap: () async {
+                          await _ts.saveValue(
+                            widget.trip?.id,
+                            'tool_${widget.toolId}_last',
+                            _out,
+                          );
+                          _snack('Saved');
+                        },
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -1685,7 +1939,8 @@ $suffix
     );
   }
 
-  void _snack(String m) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+  void _snack(String m) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
   static String _stripMood(String s) =>
       s.replaceAll(RegExp(r'\\[mood:[^\\]]*\\]', caseSensitive: false), '');
 }
@@ -1732,7 +1987,10 @@ class _TripsManagerPageState extends State<_TripsManagerPage> {
   Future<void> _createFromDraft() async {
     final t = _Trip(
       id: 'trip_${DateTime.now().microsecondsSinceEpoch}',
-      title: widget.currentDraft.dest.isEmpty ? 'New Trip' : widget.currentDraft.dest,
+      title:
+          widget.currentDraft.dest.isEmpty
+              ? 'New Trip'
+              : widget.currentDraft.dest,
       start: widget.currentDraft.range?.start,
       end: widget.currentDraft.range?.end,
     );
@@ -1745,14 +2003,25 @@ class _TripsManagerPageState extends State<_TripsManagerPage> {
     final c = TextEditingController(text: t.title);
     final newName = await showDialog<String>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Rename trip'),
-        content: TextField(controller: c, autofocus: true, decoration: const InputDecoration(hintText: 'Trip name')),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          ElevatedButton(onPressed: () => Navigator.pop(context, c.text.trim()), child: const Text('Save')),
-        ],
-      ),
+      builder:
+          (_) => AlertDialog(
+            title: const Text('Rename trip'),
+            content: TextField(
+              controller: c,
+              autofocus: true,
+              decoration: const InputDecoration(hintText: 'Trip name'),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, c.text.trim()),
+                child: const Text('Save'),
+              ),
+            ],
+          ),
     );
     if (newName == null || newName.isEmpty) return;
     t.title = newName;
@@ -1763,14 +2032,21 @@ class _TripsManagerPageState extends State<_TripsManagerPage> {
   Future<void> _delete(_Trip t) async {
     final ok = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Delete trip?'),
-        content: const Text('This removes the trip from your folders.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete')),
-        ],
-      ),
+      builder:
+          (_) => AlertDialog(
+            title: const Text('Delete trip?'),
+            content: const Text('This removes the trip from your folders.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Delete'),
+              ),
+            ],
+          ),
     );
     if (ok != true) return;
     await _ts.delete(t.id);
@@ -1789,50 +2065,81 @@ class _TripsManagerPageState extends State<_TripsManagerPage> {
         actions: [
           TextButton.icon(
             onPressed: _createFromDraft,
-            icon: const Icon(Icons.create_new_folder_rounded, color: Colors.white),
-            label: const Text('New from current', style: TextStyle(color: Colors.white)),
+            icon: const Icon(
+              Icons.create_new_folder_rounded,
+              color: Colors.white,
+            ),
+            label: const Text(
+              'New from current',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
-      body: _items.isEmpty
-          ? const Center(child: Text('No trips yet. Use “New from current”.'))
-          : ListView.separated(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 20),
-              itemCount: _items.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (_, i) {
-                final t = _items[i];
-                final subtitle = (t.start == null || t.end == null)
-                    ? 'Dates: flexible'
-                    : 'Dates: ${_d(t.start!)} → ${_d(t.end!)}';
-                return Card(
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    side: BorderSide(color: cs.onSurface.withOpacity(.18)),
-                  ),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: isLight ? Colors.black.withOpacity(.06) : cs.surfaceVariant.withOpacity(.3),
-                      child: const Icon(Icons.folder_rounded, color: _electricBlue),
+      body:
+          _items.isEmpty
+              ? const Center(
+                child: Text('No trips yet. Use “New from current”.'),
+              )
+              : ListView.separated(
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 20),
+                itemCount: _items.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                itemBuilder: (_, i) {
+                  final t = _items[i];
+                  final subtitle =
+                      (t.start == null || t.end == null)
+                          ? 'Dates: flexible'
+                          : 'Dates: ${_d(t.start!)} → ${_d(t.end!)}';
+                  return Card(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      side: BorderSide(color: cs.onSurface.withOpacity(.18)),
                     ),
-                    title: Text(t.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-                    subtitle: Text(subtitle),
-                    trailing: PopupMenuButton<String>(
-                      onSelected: (v) {
-                        if (v == 'rename') _rename(t);
-                        if (v == 'delete') _delete(t);
-                      },
-                      itemBuilder: (_) => const [
-                        PopupMenuItem(value: 'rename', child: Text('Rename')),
-                        PopupMenuItem(value: 'delete', child: Text('Delete')),
-                      ],
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor:
+                            isLight
+                                ? Colors.black.withOpacity(.06)
+                                : cs.surfaceVariant.withOpacity(.3),
+                        child: const Icon(
+                          Icons.folder_rounded,
+                          color: _electricBlue,
+                        ),
+                      ),
+                      title: Text(
+                        t.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      subtitle: Text(subtitle),
+                      trailing: PopupMenuButton<String>(
+                        onSelected: (v) {
+                          if (v == 'rename') _rename(t);
+                          if (v == 'delete') _delete(t);
+                        },
+                        itemBuilder:
+                            (_) => const [
+                              PopupMenuItem(
+                                value: 'rename',
+                                child: Text('Rename'),
+                              ),
+                              PopupMenuItem(
+                                value: 'delete',
+                                child: Text('Delete'),
+                              ),
+                            ],
+                      ),
+                      onTap:
+                          () => Navigator.pop(
+                            context,
+                            _TripAction(_TripActionKind.select, t),
+                          ),
                     ),
-                    onTap: () => Navigator.pop(context, _TripAction(_TripActionKind.select, t)),
-                  ),
-                );
-              },
-            ),
+                  );
+                },
+              ),
     );
   }
 }
@@ -1848,18 +2155,24 @@ class _Trip {
   _Trip({required this.id, required this.title, this.start, this.end});
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'title': title,
-        'start': start?.millisecondsSinceEpoch,
-        'end': end?.millisecondsSinceEpoch,
-      };
+    'id': id,
+    'title': title,
+    'start': start?.millisecondsSinceEpoch,
+    'end': end?.millisecondsSinceEpoch,
+  };
 
   static _Trip fromJson(Map<String, dynamic> j) => _Trip(
-        id: j['id'] as String,
-        title: j['title'] as String,
-        start: j['start'] == null ? null : DateTime.fromMillisecondsSinceEpoch(j['start'] as int),
-        end: j['end'] == null ? null : DateTime.fromMillisecondsSinceEpoch(j['end'] as int),
-      );
+    id: j['id'] as String,
+    title: j['title'] as String,
+    start:
+        j['start'] == null
+            ? null
+            : DateTime.fromMillisecondsSinceEpoch(j['start'] as int),
+    end:
+        j['end'] == null
+            ? null
+            : DateTime.fromMillisecondsSinceEpoch(j['end'] as int),
+  );
 }
 
 class _TripStore {
@@ -1871,7 +2184,9 @@ class _TripStore {
     if (s == null || s.isEmpty) return [];
     try {
       final arr = (jsonDecode(s) as List).cast<Map>();
-      return arr.map((m) => _Trip.fromJson(Map<String, dynamic>.from(m))).toList();
+      return arr
+          .map((m) => _Trip.fromJson(Map<String, dynamic>.from(m)))
+          .toList();
     } catch (_) {
       return [];
     }
@@ -1894,13 +2209,19 @@ class _TripStore {
     } else {
       all.add(t);
     }
-    await _kv.save('trips_index', jsonEncode(all.map((e) => e.toJson()).toList()));
+    await _kv.save(
+      'trips_index',
+      jsonEncode(all.map((e) => e.toJson()).toList()),
+    );
   }
 
   Future<void> delete(String id) async {
     final all = await list();
     all.removeWhere((e) => e.id == id);
-    await _kv.save('trips_index', jsonEncode(all.map((e) => e.toJson()).toList()));
+    await _kv.save(
+      'trips_index',
+      jsonEncode(all.map((e) => e.toJson()).toList()),
+    );
   }
 
   Future<void> saveValue(String? tripId, String key, String value) async {
@@ -1941,7 +2262,11 @@ class _LocalStore {
 
   Future<void> save(String key, String value) async {
     final id = await _ensure();
-    await _sql.addMessage(chatId: id, role: 'system', text: '[KV:$key]\\n$value');
+    await _sql.addMessage(
+      chatId: id,
+      role: 'system',
+      text: '[KV:$key]\\n$value',
+    );
   }
 
   Future<String?> load(String key) async {
@@ -1961,26 +2286,26 @@ class _LocalStore {
 class _Tabs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(.18),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(.18)),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(.18),
+        ),
       ),
-      child: const TabBar(
-        labelPadding: EdgeInsets.symmetric(vertical: 10),
+      child: TabBar(
+        labelPadding: const EdgeInsets.symmetric(vertical: 10),
         indicatorSize: TabBarIndicatorSize.tab,
-        indicator: BoxDecoration(
+        indicator: const BoxDecoration(
           color: _electricBlue,
           borderRadius: BorderRadius.all(Radius.circular(12)),
         ),
         labelColor: Colors.black,
-        unselectedLabelColor: Colors.white70,
-        tabs: [
-          Tab(text: 'Plan'),
-          Tab(text: 'Tools'),
-        ],
+        unselectedLabelColor: isLight ? Colors.black54 : Colors.white60,
+        tabs: const [Tab(text: 'Plan'), Tab(text: 'Tools')],
       ),
     );
   }
@@ -2029,7 +2354,11 @@ class _PrimaryButton extends StatelessWidget {
   final String label;
   final IconData icon;
   final VoidCallback? onTap;
-  const _PrimaryButton({required this.label, required this.icon, required this.onTap});
+  const _PrimaryButton({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -2048,7 +2377,13 @@ class _PrimaryButton extends StatelessWidget {
           children: [
             Icon(icon, color: Colors.black),
             const SizedBox(width: 8),
-            Text(label, style: const TextStyle(fontWeight: FontWeight.w800, color: Colors.black)),
+            Text(
+              label,
+              style: const TextStyle(
+                fontWeight: FontWeight.w800,
+                color: Colors.black,
+              ),
+            ),
           ],
         ),
       ),
@@ -2060,7 +2395,11 @@ class _PillButton extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  const _PillButton({required this.icon, required this.label, required this.onTap});
+  const _PillButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -2075,11 +2414,14 @@ class _PillButton extends StatelessWidget {
           color: cs.surfaceVariant.withOpacity(.16),
           border: Border.all(color: cs.onSurface.withOpacity(.18)),
         ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 18),
-          const SizedBox(width: 6),
-          Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
-        ]),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18),
+            const SizedBox(width: 6),
+            Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+          ],
+        ),
       ),
     );
   }
@@ -2096,7 +2438,8 @@ class _RoundIcon extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Ink(
-        width: 28, height: 28,
+        width: 28,
+        height: 28,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: cs.surfaceVariant.withOpacity(.18),
@@ -2117,28 +2460,44 @@ class _InterestChips extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     const all = [
-      'Food','Nature','Beaches','History','Nightlife',
-      'Shopping','Adventure','Museums','Road Trip','Mountains'
+      'Food',
+      'Nature',
+      'Beaches',
+      'History',
+      'Nightlife',
+      'Shopping',
+      'Adventure',
+      'Museums',
+      'Road Trip',
+      'Mountains',
     ];
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children: all.map((t) {
-        final sel = values.contains(t);
-        return InkWell(
-          onTap: () => onToggle(t),
-          borderRadius: BorderRadius.circular(18),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
+      children:
+          all.map((t) {
+            final sel = values.contains(t);
+            return InkWell(
+              onTap: () => onToggle(t),
               borderRadius: BorderRadius.circular(18),
-              color: sel ? _electricBlue : cs.surfaceVariant.withOpacity(.14),
-              border: Border.all(color: cs.onSurface.withOpacity(.18)),
-            ),
-            child: Text(t, style: TextStyle(color: sel ? Colors.black : cs.onSurface)),
-          ),
-        );
-      }).toList(),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  color:
+                      sel ? _electricBlue : cs.surfaceVariant.withOpacity(.14),
+                  border: Border.all(color: cs.onSurface.withOpacity(.18)),
+                ),
+                child: Text(
+                  t,
+                  style: TextStyle(color: sel ? Colors.black : cs.onSurface),
+                ),
+              ),
+            );
+          }).toList(),
     );
   }
 }
@@ -2164,7 +2523,11 @@ class _DateRow extends StatelessWidget {
             const CircleAvatar(
               radius: 18,
               backgroundColor: Color(0x2A00B8FF),
-              child: Icon(Icons.date_range_rounded, color: _electricBlue, size: 18),
+              child: Icon(
+                Icons.date_range_rounded,
+                color: _electricBlue,
+                size: 18,
+              ),
             ),
             const SizedBox(width: 10),
             Expanded(child: Text(label)),
@@ -2183,13 +2546,19 @@ class _Labeled extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Padding(
-        padding: const EdgeInsets.only(bottom: 6),
-        child: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
-      ),
-      child,
-    ]);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+        ),
+        child,
+      ],
+    );
   }
 }
 
@@ -2211,12 +2580,14 @@ class _DateInline extends StatelessWidget {
           border: Border.all(color: cs.onSurface.withOpacity(.18)),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 12),
-        child: Row(children: [
-          const Icon(Icons.date_range_rounded, size: 18),
-          const SizedBox(width: 8),
-          Expanded(child: Text(label)),
-          const Icon(Icons.chevron_right_rounded, size: 18),
-        ]),
+        child: Row(
+          children: [
+            const Icon(Icons.date_range_rounded, size: 18),
+            const SizedBox(width: 8),
+            Expanded(child: Text(label)),
+            const Icon(Icons.chevron_right_rounded, size: 18),
+          ],
+        ),
       ),
     );
   }
@@ -2273,26 +2644,29 @@ class _ToolTile extends StatelessWidget {
           border: Border.all(color: cs.onSurface.withOpacity(.18)),
         ),
         padding: const EdgeInsets.all(10),
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: cs.surface.withOpacity(.06),
-              border: Border.all(color: cs.onSurface.withOpacity(.18)),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: cs.surface.withOpacity(.06),
+                border: Border.all(color: cs.onSurface.withOpacity(.18)),
+              ),
+              child: Icon(tool.icon, color: cs.primary),
             ),
-            child: Icon(tool.icon, color: cs.primary),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            tool.title,
-            maxLines: 2,
-            textAlign: TextAlign.center,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 12, color: cs.onSurface),
-          ),
-        ]),
+            const SizedBox(height: 8),
+            Text(
+              tool.title,
+              maxLines: 2,
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 12, color: cs.onSurface),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -2302,7 +2676,11 @@ class _IconBtn extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
   final String tooltip;
-  const _IconBtn({required this.icon, required this.onTap, required this.tooltip});
+  const _IconBtn({
+    required this.icon,
+    required this.onTap,
+    required this.tooltip,
+  });
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -2331,11 +2709,25 @@ class _DocItem {
   final String path;
   final String mime;
   final int ts;
-  _DocItem({required this.name, required this.path, required this.mime, required this.ts});
+  _DocItem({
+    required this.name,
+    required this.path,
+    required this.mime,
+    required this.ts,
+  });
 
-  Map<String, dynamic> toJson() => {'name': name, 'path': path, 'mime': mime, 'ts': ts};
-  static _DocItem fromJson(Map<String, dynamic> j) =>
-      _DocItem(name: j['name'] as String, path: j['path'] as String, mime: j['mime'] as String, ts: j['ts'] as int);
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'path': path,
+    'mime': mime,
+    'ts': ts,
+  };
+  static _DocItem fromJson(Map<String, dynamic> j) => _DocItem(
+    name: j['name'] as String,
+    path: j['path'] as String,
+    mime: j['mime'] as String,
+    ts: j['ts'] as int,
+  );
 }
 
 class _DocBubble extends StatelessWidget {
@@ -2343,7 +2735,12 @@ class _DocBubble extends StatelessWidget {
   final bool selected;
   final VoidCallback onToggle;
   final VoidCallback onDelete;
-  const _DocBubble({required this.item, required this.selected, required this.onToggle, required this.onDelete});
+  const _DocBubble({
+    required this.item,
+    required this.selected,
+    required this.onToggle,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -2366,27 +2763,38 @@ class _DocBubble extends StatelessWidget {
           color: selected ? _electricBlue : cs.surfaceVariant.withOpacity(.14),
           border: Border.all(color: selected ? _electricBlue : ring),
         ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(_iconForMime(item.mime), color: selected ? Colors.black : cs.primary, size: 18),
-          const SizedBox(width: 8),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 160),
-            child: Text(
-              item.name,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: selected ? Colors.black : cs.onSurface),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              _iconForMime(item.mime),
+              color: selected ? Colors.black : cs.primary,
+              size: 18,
             ),
-          ),
-          const SizedBox(width: 8),
-          InkWell(
-            onTap: onDelete,
-            borderRadius: BorderRadius.circular(12),
-            child: Padding(
-              padding: const EdgeInsets.all(2),
-              child: Icon(Icons.close_rounded, size: 16, color: selected ? Colors.black : cs.onSurface),
+            const SizedBox(width: 8),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 160),
+              child: Text(
+                item.name,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: selected ? Colors.black : cs.onSurface),
+              ),
             ),
-          ),
-        ]),
+            const SizedBox(width: 8),
+            InkWell(
+              onTap: onDelete,
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.all(2),
+                child: Icon(
+                  Icons.close_rounded,
+                  size: 16,
+                  color: selected ? Colors.black : cs.onSurface,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -2421,7 +2829,8 @@ class _DropZone extends StatelessWidget {
 class _CustomizePlanPage extends StatefulWidget {
   final String original;
   final String current;
-  final Future<String> Function(String selection, String instructions) onRegenerate;
+  final Future<String> Function(String selection, String instructions)
+  onRegenerate;
   const _CustomizePlanPage({
     required this.original,
     required this.current,
@@ -2433,8 +2842,12 @@ class _CustomizePlanPage extends StatefulWidget {
 }
 
 class _CustomizePlanPageState extends State<_CustomizePlanPage> {
-  late final TextEditingController _ctrl = TextEditingController(text: widget.current);
-  final TextEditingController _instr = TextEditingController(text: 'Tighten timings and add short commute hints.');
+  late final TextEditingController _ctrl = TextEditingController(
+    text: widget.current,
+  );
+  final TextEditingController _instr = TextEditingController(
+    text: 'Tighten timings and add short commute hints.',
+  );
   bool _busy = false;
 
   @override
@@ -2466,41 +2879,63 @@ class _CustomizePlanPageState extends State<_CustomizePlanPage> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
-            child: Row(children: [
-              Expanded(
-                child: TextField(
-                  controller: _instr,
-                  textInputAction: TextInputAction.done,
-                  decoration: const InputDecoration(
-                    hintText: 'Instructions for selected text (optional)…',
-                    border: OutlineInputBorder(),
-                    labelText: 'Regenerate selection with…',
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _instr,
+                    textInputAction: TextInputAction.done,
+                    decoration: const InputDecoration(
+                      hintText: 'Instructions for selected text (optional)…',
+                      border: OutlineInputBorder(),
+                      labelText: 'Regenerate selection with…',
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton.icon(
-                onPressed: _busy ? null : () async {
-                  final sel = _ctrl.selection;
-                  if (!sel.isValid || sel.isCollapsed) {
-                    _snack('Select some text first');
-                    return;
-                  }
-                  final pick = _ctrl.text.substring(sel.start, sel.end);
-                  setState(() => _busy = true);
-                  final rep = await widget.onRegenerate(pick, _instr.text.trim().isEmpty ? 'Improve clarity' : _instr.text.trim());
-                  final newText = _ctrl.text.replaceRange(sel.start, sel.end, rep);
-                  setState(() {
-                    _ctrl.text = newText;
-                    _ctrl.selection = TextSelection.collapsed(offset: sel.start + rep.length);
-                    _busy = false;
-                  });
-                },
-                icon: const Icon(Icons.auto_fix_high_rounded),
-                label: Text(_busy ? 'Working…' : 'Regenerate selection'),
-                style: ElevatedButton.styleFrom(backgroundColor: cs.primary, foregroundColor: Colors.black),
-              ),
-            ]),
+                const SizedBox(width: 8),
+                ElevatedButton.icon(
+                  onPressed:
+                      _busy
+                          ? null
+                          : () async {
+                            final sel = _ctrl.selection;
+                            if (!sel.isValid || sel.isCollapsed) {
+                              _snack('Select some text first');
+                              return;
+                            }
+                            final pick = _ctrl.text.substring(
+                              sel.start,
+                              sel.end,
+                            );
+                            setState(() => _busy = true);
+                            final rep = await widget.onRegenerate(
+                              pick,
+                              _instr.text.trim().isEmpty
+                                  ? 'Improve clarity'
+                                  : _instr.text.trim(),
+                            );
+                            final newText = _ctrl.text.replaceRange(
+                              sel.start,
+                              sel.end,
+                              rep,
+                            );
+                            setState(() {
+                              _ctrl.text = newText;
+                              _ctrl.selection = TextSelection.collapsed(
+                                offset: sel.start + rep.length,
+                              );
+                              _busy = false;
+                            });
+                          },
+                  icon: const Icon(Icons.auto_fix_high_rounded),
+                  label: Text(_busy ? 'Working…' : 'Regenerate selection'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: cs.primary,
+                    foregroundColor: Colors.black,
+                  ),
+                ),
+              ],
+            ),
           ),
           Expanded(
             child: Padding(
@@ -2512,7 +2947,8 @@ class _CustomizePlanPageState extends State<_CustomizePlanPage> {
                 minLines: null,
                 decoration: const InputDecoration(
                   border: OutlineInputBorder(),
-                  hintText: 'Edit your plan directly. Select text to regenerate just that part.',
+                  hintText:
+                      'Edit your plan directly. Select text to regenerate just that part.',
                 ),
               ),
             ),
@@ -2522,7 +2958,8 @@ class _CustomizePlanPageState extends State<_CustomizePlanPage> {
     );
   }
 
-  void _snack(String m) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+  void _snack(String m) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 }
 
 /* ───────────────────────── helpers ───────────────────────── */
@@ -2533,25 +2970,36 @@ String _stripMood(String s) =>
     s.replaceAll(RegExp(r'\\[mood:[^\\]]*\\]', caseSensitive: false), '');
 
 // Edit helper dialog
-Future<String?> _editText(BuildContext context, String original, {required String title}) async {
+Future<String?> _editText(
+  BuildContext context,
+  String original, {
+  required String title,
+}) async {
   final c = TextEditingController(text: original);
   return showDialog<String>(
     context: context,
-    builder: (_) => AlertDialog(
-      title: Text(title),
-      content: SizedBox(
-        width: 600,
-        child: TextField(
-          controller: c,
-          minLines: 10,
-          maxLines: 18,
-          decoration: const InputDecoration(border: OutlineInputBorder()),
+    builder:
+        (_) => AlertDialog(
+          title: Text(title),
+          content: SizedBox(
+            width: 600,
+            child: TextField(
+              controller: c,
+              minLines: 10,
+              maxLines: 18,
+              decoration: const InputDecoration(border: OutlineInputBorder()),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, c.text),
+              child: const Text('Save'),
+            ),
+          ],
         ),
-      ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-        ElevatedButton(onPressed: () => Navigator.pop(context, c.text), child: const Text('Save')),
-      ],
-    ),
   );
 }

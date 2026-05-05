@@ -42,6 +42,10 @@ class MainActivity : FlutterActivity() {
                         result.success(true)
                     }
 
+                    "isOrbRunning", "orbRunning", "is_orb_running" -> {
+                        result.success(OrbService.isActive)
+                    }
+
                     "updateMood" -> {
                         val mood = call.arguments as? String ?: "neutral"
                         Log.d("GPMai", "updateMood($mood)")

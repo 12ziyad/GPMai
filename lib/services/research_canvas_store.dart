@@ -107,19 +107,19 @@ class ResearchCanvasBlock {
   }
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'id': id,
-        'type': type,
-        'title': title,
-        'question': question,
-        'content': content,
-        'sourceLabel': sourceLabel,
-        'modelLabel': modelLabel,
-        'createdAt': createdAt.toIso8601String(),
-        'tags': tags,
-        'mediaUrl': mediaUrl,
-        'thumbnailUrl': thumbnailUrl,
-        'extra': extra,
-      };
+    'id': id,
+    'type': type,
+    'title': title,
+    'question': question,
+    'content': content,
+    'sourceLabel': sourceLabel,
+    'modelLabel': modelLabel,
+    'createdAt': createdAt.toIso8601String(),
+    'tags': tags,
+    'mediaUrl': mediaUrl,
+    'thumbnailUrl': thumbnailUrl,
+    'extra': extra,
+  };
 
   factory ResearchCanvasBlock.fromJson(Map<String, dynamic> json) {
     return ResearchCanvasBlock(
@@ -130,11 +130,17 @@ class ResearchCanvasBlock {
       content: (json['content'] ?? '').toString(),
       sourceLabel: (json['sourceLabel'] ?? '').toString(),
       modelLabel: (json['modelLabel'] ?? '').toString(),
-      createdAt: DateTime.tryParse((json['createdAt'] ?? '').toString()) ?? DateTime.now(),
-      tags: ((json['tags'] as List?) ?? const <dynamic>[]).map((e) => e.toString()).toList(growable: false),
+      createdAt:
+          DateTime.tryParse((json['createdAt'] ?? '').toString()) ??
+          DateTime.now(),
+      tags: ((json['tags'] as List?) ?? const <dynamic>[])
+          .map((e) => e.toString())
+          .toList(growable: false),
       mediaUrl: json['mediaUrl']?.toString(),
       thumbnailUrl: json['thumbnailUrl']?.toString(),
-      extra: Map<String, dynamic>.from((json['extra'] as Map?) ?? const <String, dynamic>{}),
+      extra: Map<String, dynamic>.from(
+        (json['extra'] as Map?) ?? const <String, dynamic>{},
+      ),
     );
   }
 }
@@ -187,29 +193,39 @@ class ResearchCanvas {
   }
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'id': id,
-        'title': title,
-        'description': description,
-        'tags': tags,
-        'themeKey': themeKey,
-        'pinned': pinned,
-        'createdAt': createdAt.toIso8601String(),
-        'updatedAt': updatedAt.toIso8601String(),
-        'blocks': blocks.map((e) => e.toJson()).toList(growable: false),
-      };
+    'id': id,
+    'title': title,
+    'description': description,
+    'tags': tags,
+    'themeKey': themeKey,
+    'pinned': pinned,
+    'createdAt': createdAt.toIso8601String(),
+    'updatedAt': updatedAt.toIso8601String(),
+    'blocks': blocks.map((e) => e.toJson()).toList(growable: false),
+  };
 
   factory ResearchCanvas.fromJson(Map<String, dynamic> json) {
     return ResearchCanvas(
       id: (json['id'] ?? '').toString(),
       title: (json['title'] ?? 'Untitled canvas').toString(),
       description: (json['description'] ?? '').toString(),
-      tags: ((json['tags'] as List?) ?? const <dynamic>[]).map((e) => e.toString()).toList(growable: false),
+      tags: ((json['tags'] as List?) ?? const <dynamic>[])
+          .map((e) => e.toString())
+          .toList(growable: false),
       themeKey: (json['themeKey'] ?? 'aurora').toString(),
       pinned: json['pinned'] == true,
-      createdAt: DateTime.tryParse((json['createdAt'] ?? '').toString()) ?? DateTime.now(),
-      updatedAt: DateTime.tryParse((json['updatedAt'] ?? '').toString()) ?? DateTime.now(),
+      createdAt:
+          DateTime.tryParse((json['createdAt'] ?? '').toString()) ??
+          DateTime.now(),
+      updatedAt:
+          DateTime.tryParse((json['updatedAt'] ?? '').toString()) ??
+          DateTime.now(),
       blocks: ((json['blocks'] as List?) ?? const <dynamic>[])
-          .map((e) => ResearchCanvasBlock.fromJson(Map<String, dynamic>.from(e as Map)))
+          .map(
+            (e) => ResearchCanvasBlock.fromJson(
+              Map<String, dynamic>.from(e as Map),
+            ),
+          )
           .toList(growable: false),
     );
   }
@@ -221,10 +237,12 @@ class ResearchCanvasStore {
   Future<List<ResearchCanvas>> loadAll() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_key);
-    if (raw == null || raw.trim().isEmpty) return const <ResearchCanvas>[];
+    if (raw == null || raw.trim().isEmpty) return <ResearchCanvas>[];
     final decoded = jsonDecode(raw) as List<dynamic>;
     final list = decoded
-        .map((e) => ResearchCanvas.fromJson(Map<String, dynamic>.from(e as Map)))
+        .map(
+          (e) => ResearchCanvas.fromJson(Map<String, dynamic>.from(e as Map)),
+        )
         .toList(growable: true);
     list.sort((a, b) {
       if (a.pinned != b.pinned) return a.pinned ? -1 : 1;
@@ -243,7 +261,10 @@ class ResearchCanvasStore {
 
   Future<void> saveAll(List<ResearchCanvas> canvases) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_key, jsonEncode(canvases.map((e) => e.toJson()).toList(growable: false)));
+    await prefs.setString(
+      _key,
+      jsonEncode(canvases.map((e) => e.toJson()).toList(growable: false)),
+    );
   }
 
   Future<void> upsert(ResearchCanvas canvas) async {
@@ -282,7 +303,12 @@ class ResearchCanvasStore {
   Future<void> renameCanvas(String id, String title) async {
     final canvas = await getById(id);
     if (canvas == null) return;
-    await upsert(canvas.copyWith(title: sanitizeTitleText(title), updatedAt: DateTime.now()));
+    await upsert(
+      canvas.copyWith(
+        title: sanitizeTitleText(title),
+        updatedAt: DateTime.now(),
+      ),
+    );
   }
 
   Future<void> deleteCanvas(String id) async {
@@ -294,7 +320,9 @@ class ResearchCanvasStore {
   Future<void> togglePinned(String id) async {
     final canvas = await getById(id);
     if (canvas == null) return;
-    await upsert(canvas.copyWith(pinned: !canvas.pinned, updatedAt: DateTime.now()));
+    await upsert(
+      canvas.copyWith(pinned: !canvas.pinned, updatedAt: DateTime.now()),
+    );
   }
 
   Future<void> addBlock(String canvasId, ResearchCanvasBlock block) async {
@@ -304,7 +332,11 @@ class ResearchCanvasStore {
       blocks: <ResearchCanvasBlock>[
         block.copyWith(
           title: sanitizeTitleText(block.title),
-          question: () => sanitizeBodyText(block.question).isEmpty ? null : sanitizeBodyText(block.question),
+          question:
+              () =>
+                  sanitizeBodyText(block.question).isEmpty
+                      ? null
+                      : sanitizeBodyText(block.question),
           content: sanitizeBodyText(block.content),
           sourceLabel: sanitizeTitleText(block.sourceLabel),
           modelLabel: sanitizeTitleText(block.modelLabel),
@@ -321,38 +353,60 @@ class ResearchCanvasStore {
     await upsert(updated);
   }
 
-  Future<void> addDraftToCanvas(String canvasId, ResearchCanvasBlockDraft draft) async {
+  Future<void> addDraftToCanvas(
+    String canvasId,
+    ResearchCanvasBlockDraft draft,
+  ) async {
     await addBlock(canvasId, draft.createBlock());
   }
 
   Future<void> deleteBlock(String canvasId, String blockId) async {
     final canvas = await getById(canvasId);
     if (canvas == null) return;
-    await upsert(canvas.copyWith(
-      blocks: canvas.blocks.where((e) => e.id != blockId).toList(growable: false),
-      updatedAt: DateTime.now(),
-    ));
+    await upsert(
+      canvas.copyWith(
+        blocks: canvas.blocks
+            .where((e) => e.id != blockId)
+            .toList(growable: false),
+        updatedAt: DateTime.now(),
+      ),
+    );
   }
 
   Future<void> updateBlock(String canvasId, ResearchCanvasBlock block) async {
     final canvas = await getById(canvasId);
     if (canvas == null) return;
-    final next = canvas.blocks.map((e) => e.id == block.id ? block : e).toList(growable: false);
-    await upsert(canvas.copyWith(
-      blocks: next.map((e) => e.copyWith(
-        title: sanitizeTitleText(e.title),
-        question: () => sanitizeBodyText(e.question).isEmpty ? null : sanitizeBodyText(e.question),
-        content: sanitizeBodyText(e.content),
-        sourceLabel: sanitizeTitleText(e.sourceLabel),
-        modelLabel: sanitizeTitleText(e.modelLabel),
-        tags: normalizeTags(e.tags),
-        mediaUrl: () => sanitizeBodyText(e.mediaUrl),
-        thumbnailUrl: () => sanitizeBodyText(e.thumbnailUrl),
-        extra: Map<String, dynamic>.from(e.extra),
-      )).toList(growable: false),
-      tags: normalizeTags(<String>[...canvas.tags, ...next.expand((e) => e.tags)]),
-      updatedAt: DateTime.now(),
-    ));
+    final next = canvas.blocks
+        .map((e) => e.id == block.id ? block : e)
+        .toList(growable: false);
+    await upsert(
+      canvas.copyWith(
+        blocks: next
+            .map(
+              (e) => e.copyWith(
+                title: sanitizeTitleText(e.title),
+                question:
+                    () =>
+                        sanitizeBodyText(e.question).isEmpty
+                            ? null
+                            : sanitizeBodyText(e.question),
+                content: sanitizeBodyText(e.content),
+                sourceLabel: sanitizeTitleText(e.sourceLabel),
+                modelLabel: sanitizeTitleText(e.modelLabel),
+                tags: normalizeTags(e.tags),
+                mediaUrl: () => sanitizeBodyText(e.mediaUrl),
+                thumbnailUrl: () => sanitizeBodyText(e.thumbnailUrl),
+                extra: Map<String, dynamic>.from(e.extra),
+              ),
+            )
+            .toList(growable: false),
+        tags: normalizeTags(<String>[
+          ...canvas.tags,
+          ...next.expand((e) => e.tags),
+        ]),
+        updatedAt: DateTime.now(),
+      ),
+    );
   }
 
   Future<List<ResearchCanvasBlock>> findByTag(String tag) async {
@@ -360,7 +414,11 @@ class ResearchCanvasStore {
     if (needle.isEmpty) return const <ResearchCanvasBlock>[];
     final all = await loadAll();
     return all
-        .expand((canvas) => canvas.blocks.where((b) => b.tags.map(normalizeTag).contains(needle)))
+        .expand(
+          (canvas) => canvas.blocks.where(
+            (b) => b.tags.map(normalizeTag).contains(needle),
+          ),
+        )
         .toList(growable: false);
   }
 
@@ -379,13 +437,13 @@ class ResearchCanvasStore {
     return trimmed.startsWith('#') ? trimmed : '#$trimmed';
   }
 
-
-
-
   static String sanitizeBodyText(String? raw) {
     var text = (raw ?? '').replaceAll('\r\n', '\n');
     if (text.trim().isEmpty) return '';
-    text = text.replaceAll(RegExp(r'<<META>>.*?<<ENDMETA>>', dotAll: true), ' ');
+    text = text.replaceAll(
+      RegExp(r'<<META>>.*?<<ENDMETA>>', dotAll: true),
+      ' ',
+    );
     text = text.replaceAll(RegExp(r'^<<META>>.*?\}', dotAll: true), ' ');
     const replacements = <String, String>{
       'â€¢': '•',
@@ -405,7 +463,10 @@ class ResearchCanvasStore {
       'â€ ': '†',
     };
     replacements.forEach((from, to) => text = text.replaceAll(from, to));
-    text = text.replaceAll(RegExp(r'[\u0000-\u0008\u000B\u000C\u000E-\u001F]'), '');
+    text = text.replaceAll(
+      RegExp(r'[\u0000-\u0008\u000B\u000C\u000E-\u001F]'),
+      '',
+    );
     text = text.replaceAll(RegExp(r'[ \t]+'), ' ');
     text = text.replaceAll(RegExp(r'\n{3,}'), '\n\n');
     return text.trim();
@@ -435,16 +496,51 @@ class ResearchCanvasStore {
     return sanitizeTitleText(parts.isEmpty ? value : parts.last);
   }
 
-  static List<String> suggestTags({String? title, String? content, String? sourceLabel, String? type}) {
-    final source = sanitizeBodyText([title ?? '', content ?? '', sourceLabel ?? '', type ?? ''].join(' ')).toLowerCase();
+  static List<String> suggestTags({
+    String? title,
+    String? content,
+    String? sourceLabel,
+    String? type,
+  }) {
+    final source =
+        sanitizeBodyText(
+          [title ?? '', content ?? '', sourceLabel ?? '', type ?? ''].join(' '),
+        ).toLowerCase();
     final words = RegExp(r'[a-z0-9][a-z0-9\-]{2,}')
         .allMatches(source)
         .map((m) => m.group(0)!)
-        .where((w) => !const {
-              'with', 'this', 'that', 'from', 'into', 'your', 'have', 'about', 'after', 'before',
-              'which', 'would', 'could', 'there', 'their', 'saved', 'canvas', 'block', 'title',
-              'write', 'note', 'section', 'result', 'answer', 'video', 'audio', 'image'
-            }.contains(w))
+        .where(
+          (w) =>
+              !const {
+                'with',
+                'this',
+                'that',
+                'from',
+                'into',
+                'your',
+                'have',
+                'about',
+                'after',
+                'before',
+                'which',
+                'would',
+                'could',
+                'there',
+                'their',
+                'saved',
+                'canvas',
+                'block',
+                'title',
+                'write',
+                'note',
+                'section',
+                'result',
+                'answer',
+                'video',
+                'audio',
+                'image',
+              }.contains(w),
+        )
         .toList(growable: false);
     final seen = <String>{};
     final out = <String>[];
@@ -459,9 +555,11 @@ class ResearchCanvasStore {
   }
 
   static List<String> parseTags(String raw) {
-    return normalizeTags(raw
-        .split(RegExp(r'[\s,]+'))
-        .where((e) => e.trim().isNotEmpty)
-        .map((e) => e.trim()));
+    return normalizeTags(
+      raw
+          .split(RegExp(r'[\s,]+'))
+          .where((e) => e.trim().isNotEmpty)
+          .map((e) => e.trim()),
+    );
   }
 }

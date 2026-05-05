@@ -16,7 +16,10 @@ class AILabPage extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
         children: [
-          const Text('AI Lab', style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900)),
+          const Text(
+            'AI Lab',
+            style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900),
+          ),
           const SizedBox(height: 10),
           Text(
             'A premium space for advanced reasoning, multi-step workflows, and flagship experiences built to feel different from normal chat.',
@@ -25,7 +28,8 @@ class AILabPage extends StatelessWidget {
           const SizedBox(height: 24),
           _LabCard(
             title: 'Debate Room',
-            subtitle: 'Choose any 3 models. Watch opening views, cross-challenges, refined positions, and a final synthesis.',
+            subtitle:
+                'Choose any 3 models. Watch opening views, cross-challenges, refined positions, and a final synthesis.',
             accent: const Color(0xFF12C6FF),
             accent2: const Color(0xFF8D63FF),
             icon: Icons.forum_rounded,
@@ -41,27 +45,17 @@ class AILabPage extends StatelessWidget {
           const SizedBox(height: 18),
           _LabCard(
             title: 'Research Canvas',
-            subtitle: 'A premium workspace for saved answers, manual notes, Debate Room outcomes, and AI-built sections that keep growing over time.',
+            subtitle:
+                'A premium workspace for saved answers, manual notes, Debate Room outcomes, and AI-built sections that keep growing over time.',
             accent: const Color(0xFFFF5B93),
             accent2: const Color(0xFF3F7DFF),
             icon: Icons.auto_awesome_mosaic_rounded,
             chip: 'Workspace',
             onTap: () {
               Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const ResearchCanvasPage(),
-                ),
+                MaterialPageRoute(builder: (_) => const ResearchCanvasPage()),
               );
             },
-          ),
-          const SizedBox(height: 18),
-          _LabCard(
-            title: 'Prompt Workshop',
-            subtitle: 'Refine prompts into clearer, stronger instructions with structured drafts and improvements.',
-            accent: const Color(0xFFFF5B93),
-            accent2: const Color(0xFF8D63FF),
-            icon: Icons.auto_fix_high_rounded,
-            chip: 'Planned',
           ),
         ],
       ),
@@ -104,17 +98,30 @@ class _LabCard extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: isLight
-                ? [
-                    Color.alphaBlend(accent.withOpacity(.24), const Color(0xFFF8FBFF)),
-                    Color.alphaBlend(accent2.withOpacity(.18), const Color(0xFFF3F5FA)),
-                    const Color(0xFFF4F7FB),
-                  ]
-                : [
-                    Color.alphaBlend(accent.withOpacity(.36), const Color(0xFF121826)),
-                    Color.alphaBlend(accent2.withOpacity(.32), const Color(0xFF141222)),
-                    const Color(0xFF090B11),
-                  ],
+            colors:
+                isLight
+                    ? [
+                      Color.alphaBlend(
+                        accent.withOpacity(.24),
+                        const Color(0xFFF8FBFF),
+                      ),
+                      Color.alphaBlend(
+                        accent2.withOpacity(.18),
+                        const Color(0xFFF3F5FA),
+                      ),
+                      const Color(0xFFF4F7FB),
+                    ]
+                    : [
+                      Color.alphaBlend(
+                        accent.withOpacity(.36),
+                        const Color(0xFF121826),
+                      ),
+                      Color.alphaBlend(
+                        accent2.withOpacity(.32),
+                        const Color(0xFF141222),
+                      ),
+                      const Color(0xFF090B11),
+                    ],
           ),
         ),
         child: Padding(
@@ -138,24 +145,52 @@ class _LabCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Expanded(child: Text(title, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900))),
+                        Expanded(
+                          child: Text(
+                            title,
+                            style: const TextStyle(
+                              fontSize: 19,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(999),
                             color: accent.withOpacity(.16),
                           ),
-                          child: Text(chip, style: TextStyle(color: accent, fontWeight: FontWeight.w800, fontSize: 13)),
+                          child: Text(
+                            chip,
+                            style: TextStyle(
+                              color: accent,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 13,
+                            ),
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 10),
-                    Text(subtitle, style: TextStyle(fontSize: 14, height: 1.35, color: subtitleColor)),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 14,
+                        height: 1.35,
+                        color: subtitleColor,
+                      ),
+                    ),
                     if (onTap != null) ...[
                       const SizedBox(height: 12),
                       Text(
                         'Open now',
-                        style: TextStyle(color: accent, fontWeight: FontWeight.w800),
+                        style: TextStyle(
+                          color: accent,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ],
                   ],

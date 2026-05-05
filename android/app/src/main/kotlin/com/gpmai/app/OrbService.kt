@@ -99,6 +99,7 @@ class OrbService : Service(), TextToSpeech.OnInitListener {
         private const val ACTIVE_ALPHA = 1.0f
         private const val PEEK_RATIO = 0.5f
         private const val AUTO_DOCK_DELAY_MS = 3000L
+        @JvmStatic @Volatile var isActive = false
     }
 
     /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ TEMP log store (no persistence) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -337,6 +338,7 @@ private fun logFallback(reason: FallbackReason, detail: String = "") {
 
 override fun onCreate() {
     super.onCreate()
+    isActive = true
     ensureAskChannel()
 
     // ---- Core inits ----
@@ -756,7 +758,7 @@ private fun showAskPanelTextOnly() {
     container.addView(tip)
 
     val input = EditText(this).apply {
-        hint = "Type your questionâ€¦"
+        hint = "Type your question..."
         setTextColor(0xFFFFFFFF.toInt())
         setHintTextColor(0x99FFFFFF.toInt())
         setBackgroundColor(0x22000000)
@@ -2535,7 +2537,7 @@ private fun showAskAboutScreenPanel(bitmap: Bitmap) {
     }
 
     val input = EditText(this).apply {
-        hint = "Ask about this screenâ€¦"
+        hint = "Ask about this screen..."
         setTextColor(0xFFFFFFFF.toInt())
         setHintTextColor(0x99FFFFFF.toInt())
         setBackgroundColor(0x22000000)
@@ -2748,7 +2750,7 @@ private fun showAskGreenChat() {
     }
 
     val input = EditText(this).apply {
-        hint = "Type or use the green micâ€¦"
+        hint = "Type or use Mic button..."
         setTextColor(0xFFFFFFFF.toInt())
         setHintTextColor(0xAAFFFFFF.toInt())
         setBackgroundColor(0x22000000)
@@ -2827,7 +2829,7 @@ private fun askSendMergedScreenQuestion(q: String, onAnswer: (String) -> Unit) {
         val prompt = "USER QUESTION:\n$q\n\nSCREEN CONTENT (Accessibility only):\n$access"
         methodChannel.invokeMethod("handleUserMessage", prompt, object : MethodChannel.Result {
             override fun success(result: Any?) { onAnswer(result?.toString()?.trim().orEmpty()) }
-            override fun error(code: String, msg: String?, details: Any?) { onAnswer("Error: ${msg ?: "unknown"}") }
+            override fun error(code: String, msg: String?, details: Any?) { val m = msg ?: "unknown"; onAnswer(if (m.contains("401") || m.contains("Unauthorized")) "Sign in required to use screen-aware answers." else "Could not answer. Check login/server.") }
             override fun notImplemented() { onAnswer("Brain not available") }
         })
         return
@@ -2845,7 +2847,7 @@ private fun askSendMergedScreenQuestion(q: String, onAnswer: (String) -> Unit) {
         """.trimIndent()
         methodChannel.invokeMethod("handleUserMessage", prompt, object : MethodChannel.Result {
             override fun success(result: Any?) { onAnswer(result?.toString()?.trim().orEmpty()) }
-            override fun error(code: String, msg: String?, details: Any?) { onAnswer("Error: ${msg ?: "unknown"}") }
+            override fun error(code: String, msg: String?, details: Any?) { val m = msg ?: "unknown"; onAnswer(if (m.contains("401") || m.contains("Unauthorized")) "Sign in required to use screen-aware answers." else "Could not answer. Check login/server.") }
             override fun notImplemented() { onAnswer("Brain not available") }
         })
     }
@@ -3114,7 +3116,7 @@ private fun askAboutScreenPolicySafe(question: String) {
     ensureScreenReadConsentThen {
         // visible indicator
         showVoiceMouthOverlay()
-        voiceMouthOverlay.findViewById<TextView>(R.id.status_label).text = "ðŸ”Ž Analyzing this screenâ€¦"
+        voiceMouthOverlay.findViewById<TextView>(R.id.status_label).text = "Analyzing this screen..."
 
         val bmp = captureScreenBitmap()
         if (bmp == null) {
@@ -3234,7 +3236,7 @@ private fun showAskChatCompact() {
     aiRow.addView(aiLine); aiRow.addView(speakerBtn)
 
     val input = EditText(this).apply {
-        hint = "Type your questionâ€¦"
+        hint = "Type your question..."
         setTextColor(0xFFFFFFFF.toInt()); setHintTextColor(0x88FFFFFF.toInt())
         setBackgroundColor(0x22000000)
         setPadding(dp(8), dp(6), dp(8), dp(6))
@@ -3265,30 +3267,55 @@ private fun showAskChatCompact() {
             isSpeaking = false
 
             userLine.visibility = View.VISIBLE; userLine.text = "You: $q"
-            aiRow.visibility = View.VISIBLE;    aiLine.text = "GPMai: Thinkingâ€¦"
+            aiRow.visibility = View.VISIBLE;    aiLine.text = "GPMai: Thinking..."
 
             input.setText(""); askCompactView?.requestLayout()
             status.visibility = View.VISIBLE
-            setAskStatus("Preparingâ€¦")
+            setAskStatus("Preparing...")
+
+            // 25-second hard timeout
+            val timeoutHandler = android.os.Handler(android.os.Looper.getMainLooper())
+            var answered = false
+            val timeoutRunnable = Runnable {
+                if (!answered) {
+                    answered = true
+                    aiLine.text = "GPMai: Could not get response. Check login/server connection."
+                    setAskStatus("Timeout")
+                    speakerBtn.visibility = View.GONE
+                    askCompactView?.requestLayout()
+                }
+            }
+            timeoutHandler.postDelayed(timeoutRunnable, 25000L)
 
             // start capture & pipeline
             startProjectionSession {
                 hideImeNow()
-                setAskStatus("Capturing screenâ€¦")
+                setAskStatus("Capturing screen...")
 
                 android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                    setAskStatus("Securingâ€¦")
+                    setAskStatus("Securing...")
 
                     android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                        setAskStatus("Sending to GPTâ€¦")
-                        setAskStatus("Waiting for replyâ€¦")
+                        setAskStatus("Sending...")
+                        setAskStatus("Waiting for reply...")
                         askOncePolicySafe(q) { ans ->
+                            if (!answered) {
+                                answered = true
+                                timeoutHandler.removeCallbacks(timeoutRunnable)
+                            }
+                            val display = when {
+                                ans.contains("401") || ans.contains("Unauthorized") ->
+                                    "Sign in required to use screen-aware answers."
+                                ans.contains("Error:") && ans.length < 80 ->
+                                    "Could not answer. Check login/server."
+                                ans.isBlank() -> "[No response]"
+                                else -> ans
+                            }
                             setAskStatus("Reply received")
-                            aiLine.text = "GPMai: ${ans.ifBlank { "[No response]" }}"
-                            speakerBtn.visibility = if (ans.isBlank()) View.GONE else View.VISIBLE
+                            aiLine.text = "GPMai: $display"
+                            speakerBtn.visibility = if (ans.isBlank() || display.startsWith("Sign in") || display.startsWith("Could not")) View.GONE else View.VISIBLE
                             isSpeaking = false
                             askCompactView?.requestLayout()
-                            setAskStatus("Finalizingâ€¦")
                             android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
                                 setAskStatus("Done")
                             }, 120)
@@ -3572,29 +3599,29 @@ private fun mapToPublicStep(s: String): String {
     val t = s.lowercase(Locale.US)
     return when {
         // PREPARING
-        listOf("prepare", "boot", "init", "load").any { it in t } -> "Preparingâ€¦"
+        listOf("prepare", "boot", "init", "load").any { it in t } -> "Preparing..."
 
         // CAPTURING
-        listOf("capture", "screenshot", "grab frame", "snapshot").any { it in t } -> "Capturing screenâ€¦"
+        listOf("capture", "screenshot", "grab frame", "snapshot").any { it in t } -> "Capturing screen..."
 
         // SECURING (encryption / masking / redaction hints)
-        listOf("secure", "encrypt", "mask", "redact", "sanitize").any { it in t } -> "Securingâ€¦"
+        listOf("secure", "encrypt", "mask", "redact", "sanitize").any { it in t } -> "Securing..."
 
         // ANALYZING (ocr / vision / nlp bundled)
-        listOf("ocr", "read", "analyz", "parse", "understand", "inspect").any { it in t } -> "Analyzingâ€¦"
+        listOf("ocr", "read", "analyz", "parse", "understand", "inspect").any { it in t } -> "Analyzing..."
 
         // SUMMARIZING
-        listOf("summary", "summariz", "distill", "condense").any { it in t } -> "Summarizingâ€¦"
+        listOf("summary", "summariz", "distill", "condense").any { it in t } -> "Summarizing..."
 
         // ANSWERING
-        listOf("compose", "draft", "answer", "reply", "generate").any { it in t } -> "Answeringâ€¦"
+        listOf("compose", "draft", "answer", "reply", "generate").any { it in t } -> "Answering..."
 
         // FINALIZING
-        listOf("format", "finaliz", "polish", "wrap", "render").any { it in t } -> "Finalizingâ€¦"
+        listOf("format", "finaliz", "polish", "wrap", "render").any { it in t } -> "Finalizing..."
 
         // NETWORK / RETRY / STATES
-        listOf("connect", "network").any { it in t } -> "Connectingâ€¦"
-        listOf("retry", "backoff").any { it in t } -> "Retryingâ€¦"
+        listOf("connect", "network").any { it in t } -> "Connecting..."
+        listOf("retry", "backoff").any { it in t } -> "Retrying..."
         listOf("pause", "paused").any { it in t } -> "Paused"
         listOf("cancel", "cancelled", "canceled").any { it in t } -> "Cancelled"
         listOf("error", "fail", "timeout").any { it in t } -> "Error"
@@ -3602,7 +3629,7 @@ private fun mapToPublicStep(s: String): String {
         // DONE
         listOf("done", "complete", "finished", "success").any { it in t } -> "Done âœ…"
 
-        else -> "Workingâ€¦"
+        else -> "Working..."
     }
 }
 
@@ -3651,7 +3678,7 @@ private fun askScreenWithImageFirst(
         return
     }
 
-    setAskStatus("Preparingâ€¦")
+    setAskStatus("Preparing...")
 
     maybeShowExplainThen {
         startProjectionSession {
@@ -3659,7 +3686,7 @@ private fun askScreenWithImageFirst(
             temporarilyHideOurOverlays()
 
             Handler(Looper.getMainLooper()).postDelayed({
-                setAskStatus("Capturing screenâ€¦")
+                setAskStatus("Capturing screen...")
 
                 fun captureWithRetry(onGot: (Bitmap?) -> Unit) {
                     val first = captureScreenBitmap()
@@ -3678,7 +3705,7 @@ private fun askScreenWithImageFirst(
                         if (bmp == null) {
                             // â¬‡ï¸ Capture failed â†’ we are going to text fallback
                             logFallback(FallbackReason.CAPTURE_NULL, "captureScreenBitmap() returned null")
-                            setAskStatus("Analyzing textâ€¦")
+                            setAskStatus("Analyzing text...")
                             logFallback(FallbackReason.TEXT_ONLY_PATH, "fallback to askSendMergedScreenQuestion")
                             askSendMergedScreenQuestion(question) { ans ->
                                 setAskStatus("Done")
@@ -3687,7 +3714,7 @@ private fun askScreenWithImageFirst(
                             return@captureWithRetry
                         }
 
-                        setAskStatus("Reading text (OCR)â€¦")
+                        setAskStatus("Reading text (OCR)...")
                         val scaled = Bitmap.createScaledBitmap(
                             bmp,
                             512, (bmp.height * 512f / bmp.width).toInt().coerceAtLeast(1), true
@@ -3699,7 +3726,7 @@ private fun askScreenWithImageFirst(
                                 logFallback(FallbackReason.OCR_EMPTY, "MLKit returned empty text")
                             }
 
-                            setAskStatus("Sending to GPTâ€¦")
+                            setAskStatus("Sending...")
                             val b64 = toJpegBase64(scaled)
                             val payload = mapOf(
                                 "question" to question,
@@ -3708,7 +3735,7 @@ private fun askScreenWithImageFirst(
                                 "ocr_text" to (ocr ?: "")
                             )
 
-                            setAskStatus("Waiting for replyâ€¦")
+                            setAskStatus("Waiting for reply...")
 
                             methodChannel.invokeMethod("handleVisionMessage", payload,
                                 object : MethodChannel.Result {
@@ -3720,7 +3747,7 @@ private fun askScreenWithImageFirst(
                                     override fun error(code: String, msg: String?, details: Any?) {
                                         // â¬‡ï¸ Vision API path errored â†’ text fallback
                                         logFallback(FallbackReason.API_ERROR, "code=$code msg=${msg ?: "?"}")
-                                        setAskStatus("Fallback (text only)â€¦")
+                                        setAskStatus("Fallback (text only)...")
                                         logFallback(FallbackReason.TEXT_ONLY_PATH, "fallback to askSendMergedScreenQuestion")
                                         askSendMergedScreenQuestion(question) { ans ->
                                             if (alsoSpeak) speakOut(ans) else onAnswer(ans)
@@ -3730,7 +3757,7 @@ private fun askScreenWithImageFirst(
                                     override fun notImplemented() {
                                         // â¬‡ï¸ Dart channel not wired
                                         logFallback(FallbackReason.CHANNEL_NOT_IMPLEMENTED, "handleVisionMessage not implemented")
-                                        setAskStatus("Fallback (text only)â€¦")
+                                        setAskStatus("Fallback (text only)...")
                                         logFallback(FallbackReason.TEXT_ONLY_PATH, "fallback to askSendMergedScreenQuestion")
                                         askSendMergedScreenQuestion(question) { ans ->
                                             if (alsoSpeak) speakOut(ans) else onAnswer(ans)
@@ -4182,7 +4209,7 @@ private fun buildProcessingChip(): View {
         layoutParams = LinearLayout.LayoutParams(dp(18), dp(18)).apply { rightMargin = dp(10) }
     }
     val label = TextView(this).apply {
-        text = "Preparingâ€¦"
+        text = "Preparing..."
         setTextColor(0xFFEFEFEF.toInt())
         textSize = 12f
     }
@@ -4573,7 +4600,7 @@ private fun buildAskProgressNotification(status: String): Notification {
     return Notification.Builder(this, ASK_CHANNEL_ID)
         .setSmallIcon(android.R.drawable.ic_menu_info_details)
         .setContentTitle("GPMai is analyzing this screen")
-        .setContentText(status.ifBlank { "Workingâ€¦" })
+        .setContentText(status.ifBlank { "Working..." })
         .setOnlyAlertOnce(true)
         .setOngoing(true)                       // non-dismissible
         .setColor(0xFFE53935.toInt())           // ðŸ”´ red accent
@@ -4622,6 +4649,7 @@ private fun handleAskStopFromNotif() {
 
 override fun onDestroy() {
     super.onDestroy()
+    isActive = false
 
     // helpers
     fun getOrNull(block: () -> Any?): Any? = try { block() } catch (_: Exception) { null }
