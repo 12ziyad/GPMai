@@ -83,6 +83,14 @@ import kotlin.random.Random
 
 
 class OrbService : Service(), TextToSpeech.OnInitListener {
+    // --- Orb gesture/touch state fields ---
+    private var downRawX = 0f
+    private var downRawY = 0f
+    private var startOrbX = 0
+    private var startOrbY = 0
+    private var didDragPastSlop = false
+    private var longPressTriggered = false
+    private val touchSlop by lazy { ViewConfiguration.get(this).scaledTouchSlop }
 
     /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ companion constants (OK for const here) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     companion object {
@@ -662,33 +670,38 @@ private fun setupOrbView() {
 
     // -------- gestures --------
     val gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
-        override fun onDown(e: MotionEvent): Boolean = true
+        override fun onDown(e: MotionEvent): Boolean {
+            didDragPastSlop = false
+            longPressTriggered = false
+            return true
+        }
 
-        // âœ… single tap â†’ 4-button panel (Back/Home/Recents/Kill)
-    override fun onSingleTapUp(e: MotionEvent): Boolean {
-    cancelAutoDock()
-    slideOutFromEdge()
-    // no more 4-button panel
-    return true
-}
-
-
-
-        // âœ… double-tap â†’ chat box
-        override fun onDoubleTap(e: MotionEvent): Boolean {
+        override fun onSingleTapUp(e: MotionEvent): Boolean {
+            // Only slide out, do not move orb or open panel
             cancelAutoDock()
             slideOutFromEdge()
+            Log.d("OrbGesture", "tap released no drag")
+            return true
+        }
+
+        override fun onDoubleTap(e: MotionEvent): Boolean {
+            longPressTriggered = false
+            didDragPastSlop = false
+            cancelAutoDock()
+            slideOutFromEdge()
+            Log.d("OrbGesture", "double tap -> chat")
             showChatBox()
             return true
         }
 
-        // âœ… long-press â†’ ask-about-screen (policy-safe panel; capture only after Ask)
-       // Long press â†’ compact Ask chat (text + Ask button)
-override fun onLongPress(e: MotionEvent) {
-    cancelAutoDock()
-    slideOutFromEdge()
-    showAskChatCompact()   // NEW
-}
+        override fun onLongPress(e: MotionEvent) {
+            longPressTriggered = true
+            didDragPastSlop = false
+            cancelAutoDock()
+            slideOutFromEdge()
+            Log.d("OrbGesture", "long press -> compact ask")
+            showAskChatCompact()
+        }
     })
 
     // -------- drag + edge-dock behavior --------
@@ -697,36 +710,52 @@ override fun onLongPress(e: MotionEvent) {
         when (e.action) {
             MotionEvent.ACTION_DOWN -> {
                 isDragging = false
-                slideOutFromEdge()
+                didDragPastSlop = false
+                longPressTriggered = false
+                downRawX = e.rawX
+                downRawY = e.rawY
+                startOrbX = orbParams.x
+                startOrbY = orbParams.y
                 orbView.alpha = ACTIVE_ALPHA
                 lastTouchTime = System.currentTimeMillis()
             }
             MotionEvent.ACTION_MOVE -> {
-                isDragging = true
-                hideThreeSquareButtons()
-
-                val b = screenBounds()
-                // choose side by finger position (switch when crossing center)
-                preferLeftEdge = e.rawX < b.centerX()
-
-                // lock X to chosen edge; Y free (clamped)
-                val lockedX = if (preferLeftEdge) b.left + 24 else b.right - v.width - 24
-                val lockedY = (e.rawY - v.height / 2).toInt()
-                val (cx, cy) = clampXY(lockedX, lockedY, v.width, v.height)
-
-                orbParams.x = cx
-                orbParams.y = cy
-
-                ensureOrbVisible()
-                try { windowManager.updateViewLayout(orbView, orbParams) } catch (_: Exception) {}
-
-                // keep related overlays near orb
-                updateChatPosition()
-                updateControlPosition()
+                val dx = e.rawX - downRawX
+                val dy = e.rawY - downRawY
+                if (!didDragPastSlop && (kotlin.math.abs(dx) > touchSlop || kotlin.math.abs(dy) > touchSlop)) {
+                    didDragPastSlop = true
+                    isDragging = true
+                    Log.d("OrbGesture", "drag started")
+                }
+                if (didDragPastSlop) {
+                    isDragging = true
+                    hideThreeSquareButtons()
+                    val b = screenBounds()
+                    // lock X to edge, Y moves smoothly
+                    preferLeftEdge = downRawX < b.centerX()
+                    val lockedX = if (preferLeftEdge) b.left + 24 else b.right - v.width - 24
+                    val newY = startOrbY + (e.rawY - downRawY).toInt()
+                    val (cx, cy) = clampXY(lockedX, newY, v.width, v.height)
+                    orbParams.x = cx
+                    orbParams.y = cy
+                    ensureOrbVisible()
+                    try { windowManager.updateViewLayout(orbView, orbParams) } catch (_: Exception) {}
+                    updateChatPosition()
+                    updateControlPosition()
+                }
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                isDragging = false
-                scheduleAutoDock(1200L) // reâ€‘arm peek after a short delay
+                if (didDragPastSlop) {
+                    isDragging = false
+                    // Only auto-dock if not blocked by UI
+                    if (!isBlockingUiOpen()) {
+                        scheduleAutoDock(1200L)
+                    }
+                } else {
+                    isDragging = false
+                    // Only tap, not drag
+                    Log.d("OrbGesture", "tap released no drag")
+                }
             }
         }
         true
