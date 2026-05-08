@@ -53,10 +53,29 @@ class BrainChannel {
   static Future<String> _askVisionFromNative(
       Map<String, dynamic> args) async {
     final question = (args['question'] ?? '').toString().trim();
-    final screenText = (args['screenText'] ?? '').toString().trim();
-    final imageBase64 = (args['imageBase64'] ?? args['image_base64_jpeg'] ?? '').toString().trim();
+
+    // Merge all screen-text variants that Kotlin may send
+    final directScreenText = (args['screenText'] ?? '').toString().trim();
+    final a11yText = (args['a11y_text'] ?? args['a11yText'] ?? '').toString().trim();
+    final ocrText = (args['ocr_text'] ?? args['ocrText'] ?? '').toString().trim();
+    final screenText = [
+      if (directScreenText.isNotEmpty) directScreenText,
+      if (a11yText.isNotEmpty) 'Accessibility text:\n$a11yText',
+      if (ocrText.isNotEmpty) 'OCR text:\n$ocrText',
+    ].join('\n\n').trim();
+
+    // Accept any image-base64 key variant Kotlin may use
+    final imageBase64 = (args['imageBase64'] ??
+            args['image_base64_jpeg'] ??
+            args['imageBase64Jpeg'] ??
+            '')
+        .toString()
+        .trim();
+
     final mimeType = (args['mimeType'] ?? 'image/jpeg').toString();
     final modelId = (args['model'] ?? 'google/gemini-2.5-flash-lite').toString();
+
+    _log('[BrainChannel] vision args questionLen=${question.length} screenTextLen=${screenText.length} imageLen=${imageBase64.length}');
 
     if (TempOpenAIVisionClient.isEnabled) {
       _log('[BrainChannel] routing native Orb call to TempOpenAI vision');

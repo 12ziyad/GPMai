@@ -10,15 +10,13 @@ abstract final class TempOpenAIVisionClient {
   static const String _apiKey = String.fromEnvironment('OPENAI_API_KEY');
 
   static bool get isEnabled => _enabled && _apiKey.isNotEmpty;
-
   static bool get keyPresent => _apiKey.isNotEmpty;
 
-  /// Call once at startup to confirm compile-time values are correct.
   static void logStatus() {
     _log('enabled=$_enabled keyPresent=${_apiKey.isNotEmpty}');
   }
 
-  // ── Vision call (text + optional image) ──────────────────────────────────
+  // ── Vision call (text + optional screenshot) ─────────────────────────────
 
   static Future<String> ask({
     required String question,
@@ -27,14 +25,32 @@ abstract final class TempOpenAIVisionClient {
     String mimeType = 'image/jpeg',
   }) async {
     final hasImage = imageBase64.isNotEmpty;
-    _log('request start model=gpt-4o-mini hasImage=$hasImage');
+    _log('request start model=gpt-4o-mini hasImage=$hasImage imageLen=${imageBase64.length} screenTextLen=${screenText.length}');
+
+    // No image and no screen text — nothing to work with.
+    if (!hasImage && screenText.isEmpty) {
+      return 'Screenshot was not received. Please allow screen capture or ask again.';
+    }
+
+    final systemInstructions = hasImage
+        ? 'You are GPMai Orb, a screen-aware assistant.\n'
+            'You are receiving the user\'s current phone screenshot as an image.\n'
+            'Use the screenshot first, then OCR/accessibility text as backup.\n'
+            'Do not say you cannot see the screen if an image is provided.\n'
+            'Answer the user\'s question directly and specifically.'
+        : 'You are GPMai Orb, a screen-aware assistant.\n'
+            'Screenshot was not received. I can only use visible text.\n'
+            'Answer from the accessibility/OCR text provided.';
+
+    final textBody = StringBuffer();
+    textBody.write(systemInstructions);
+    textBody.write('\n\nUser question:\n$question');
+    if (screenText.isNotEmpty) {
+      textBody.write('\n\nVisible text extracted from screen:\n$screenText');
+    }
 
     final userContent = <Map<String, dynamic>>[
-      {
-        'type': 'text',
-        'text': 'You are GPMai Orb. Answer concisely.\n\n'
-            'Screen context: $screenText\n\nUser: $question',
-      },
+      {'type': 'text', 'text': textBody.toString()},
     ];
 
     if (hasImage) {
@@ -47,13 +63,13 @@ abstract final class TempOpenAIVisionClient {
     return _post(userContent);
   }
 
-  // ── Text-only call (chat box) ─────────────────────────────────────────────
+  // ── Text-only call (chat box / fallback) ─────────────────────────────────
 
   static Future<String> askTextTemp({
     required String question,
     String screenText = '',
   }) async {
-    _log('request start model=gpt-4o-mini hasImage=false');
+    _log('request start model=gpt-4o-mini hasImage=false screenTextLen=${screenText.length}');
 
     final text = screenText.trim().isEmpty
         ? 'You are GPMai Orb. Answer concisely.\n\nUser: $question'

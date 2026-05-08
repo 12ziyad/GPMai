@@ -453,8 +453,10 @@ override fun onCreate() {
                 projectionDataIntent = i.getParcelableExtra("data")
                 addLogLine("✓ Projection consent received")
 
+                Log.d("OrbVisionFlow", "projection consent received resultCode=$projectionResultCode dataNull=${projectionDataIntent == null}")
                 val ok = initMediaProjection()
                 isProjectionSessionActive = ok
+                Log.d("OrbVisionFlow", "initMediaProjection ok=$ok")
                 if (!ok) {
                     addLogLine("✖ Failed to start projection from consent")
                     showIdleNotif()
@@ -3416,9 +3418,37 @@ private fun showAskChatCompact() {
             Log.d("OrbVisionFlow", "compact ASK pressed q.len=${q.length}")
             Log.d("OrbVisionFlow", "startProjectionSession requested")
 
+
+            // 10-second fallback: if MediaProjection consent never arrives, use text-only TempOpenAI.
+            val projFallbackHandler = android.os.Handler(android.os.Looper.getMainLooper())
+            val projFallbackRunnable = Runnable {
+                if (!answered) {
+                    Log.d("OrbVisionFlow", "projection consent not received in 10s - text fallback")
+                    onProjectionReady = null
+                    currentStage = "text_fallback_no_consent"
+                    setAskStatus("Asking (text only)...")
+                    askSendMergedScreenQuestion(q) { ans ->
+                        if (!answered) {
+                            answered = true
+                            timeoutHandler.removeCallbacks(timeoutRunnable)
+                        }
+                        Log.d("OrbVisionFlow", "text-fallback onAnswer ans.len=${ans.length}")
+                        val display = if (ans.isBlank()) "No reply received." else ans
+                        setAskStatus("Reply received")
+                        aiLine.text = "GPMai: $display"
+                        speakerBtn.visibility = if (display == "No reply received.") View.GONE else View.VISIBLE
+                        isSpeaking = false
+                        askCompactView?.requestLayout()
+                        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ setAskStatus("Done") }, 120)
+                    }
+                }
+            }
+            projFallbackHandler.postDelayed(projFallbackRunnable, 10000L)
+
             // start capture & pipeline
             startProjectionSession {
                 Log.d("OrbVisionFlow", "projection consent received")
+                projFallbackHandler.removeCallbacks(projFallbackRunnable)
                 currentStage = "capture_and_brain"
                 hideImeNow()
                 setAskStatus("Capturing screen...")
@@ -3855,6 +3885,16 @@ private fun askScreenWithImageFirst(
 
                             setAskStatus("Sending...")
                             val b64 = toJpegBase64(scaled)
+                            Log.d("OrbVisionFlow", "invoking handleVisionMessage imageLen=${b64.length} a11yLen=${a11y.length} ocrLen=${ocr?.length ?: 0}")
+
+                            if (b64.isBlank()) {
+                                Log.e("OrbVisionFlow", "b64 blank after encode - falling back to text-only")
+                                val fbAns = "Screenshot was empty. Using text-only context."
+                                if (alsoSpeak) speakOut(fbAns) else onAnswer(fbAns)
+                                setAskStatus("Done")
+                                return@getOCRTextFromBitmap
+                            }
+
                             val payload = mapOf(
                                 "question" to question,
                                 "image_base64_jpeg" to b64,
@@ -3864,7 +3904,6 @@ private fun askScreenWithImageFirst(
 
                             setAskStatus("Waiting for reply...")
 
-                            Log.d("OrbVisionFlow", "invoking handleVisionMessage")
                             methodChannel.invokeMethod("handleVisionMessage", payload,
                                 object : MethodChannel.Result {
                                     override fun success(result: Any?) {
@@ -3928,6 +3967,8 @@ private fun startProjectionSession(then: () -> Unit) {
     addLogLine("ðŸŸ  Requesting screen-capture consent")
     try {
         val i = Intent(this, PermissionActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        hideImeNow()
+        Log.d("OrbVisionFlow", "launching MediaProjection permission activity")
         startActivity(i)
     } catch (_: Exception) {
         addLogLine("âŒ Could not open consent activity")
