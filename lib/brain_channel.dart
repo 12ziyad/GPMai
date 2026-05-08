@@ -3,6 +3,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'groq/model_router.dart';
+import 'services/temp_openai_vision_client.dart';
 
 class BrainChannel {
   BrainChannel._();
@@ -24,27 +26,114 @@ class BrainChannel {
   // -------------- Init & native calls --------------
   static void init() {
     _channel.setMethodCallHandler(_onNativeCall);
-    _log('BrainChannel ready');
+    _log('[BrainChannel] initialized');
+    TempOpenAIVisionClient.logStatus();
   }
 
   static Future<dynamic> _onNativeCall(MethodCall call) async {
+    _log('[BrainChannel] method=${call.method} tempOpenAI enabled=${TempOpenAIVisionClient.isEnabled} keyPresent=${TempOpenAIVisionClient.keyPresent}');
     switch (call.method) {
+      case 'askVision':
+        return await _askVisionFromNative(
+            Map<String, dynamic>.from(call.arguments as Map? ?? {}));
+      case 'askText':
+        return await _askTextFromNative(
+            Map<String, dynamic>.from(call.arguments as Map? ?? {}));
       case 'handleVisionMessage':
-        final Map payload = (call.arguments as Map?) ?? {};
-        return await visionFirst(
-          question: (payload['question'] ?? '').toString(),
-          imageBase64Jpeg: (payload['image_base64_jpeg'] ?? '').toString(),
-          a11y: (payload['a11y_text'] ?? '').toString(),
-          ocr: (payload['ocr_text'] ?? '').toString(),
-        );
+        return await _askVisionFromNative(
+            Map<String, dynamic>.from(call.arguments as Map? ?? {}));
       case 'handleUserMessage':
-        return await textOnly(
-          system: 'You answer briefly (1–2 lines).',
-          user: (call.arguments ?? '').toString(),
-        );
+        return await _askTextFromNative(
+            Map<String, dynamic>.from({'question': (call.arguments ?? '').toString()}));
       default:
         return null;
     }
+  }
+
+  static Future<String> _askVisionFromNative(
+      Map<String, dynamic> args) async {
+    final question = (args['question'] ?? '').toString().trim();
+    final screenText = (args['screenText'] ?? '').toString().trim();
+    final imageBase64 = (args['imageBase64'] ?? args['image_base64_jpeg'] ?? '').toString().trim();
+    final mimeType = (args['mimeType'] ?? 'image/jpeg').toString();
+    final modelId = (args['model'] ?? 'google/gemini-2.5-flash-lite').toString();
+
+    if (TempOpenAIVisionClient.isEnabled) {
+      _log('[BrainChannel] routing native Orb call to TempOpenAI vision');
+      return TempOpenAIVisionClient.ask(
+        question: question,
+        screenText: screenText,
+        imageBase64: imageBase64,
+        mimeType: mimeType,
+      );
+    }
+
+    final prompt = '''
+You are GPMai Orb, a screen-aware assistant.
+
+User question:
+$question
+
+Visible screen text / OCR context:
+$screenText
+
+Answer based on the screenshot and screen context. Be concise and helpful.
+'''.trim();
+
+    final parts = <Map<String, dynamic>>[
+      {
+        'type': 'text',
+        'text': 'Screen context:\n$screenText',
+      }
+    ];
+
+    if (imageBase64.isNotEmpty) {
+      parts.add({
+        'type': 'image_base64',
+        'mimeType': mimeType,
+        'data': imageBase64,
+      });
+    }
+
+    return await ModelRouter.getResponse(
+      prompt,
+      modelOverride: modelId,
+      contentParts: parts,
+      retries: 1,
+    );
+  }
+
+  static Future<String> _askTextFromNative(
+      Map<String, dynamic> args) async {
+    final question = (args['question'] ?? '').toString().trim();
+    final screenText = (args['screenText'] ?? '').toString().trim();
+    final modelId = (args['model'] ?? '').toString().trim();
+
+    if (TempOpenAIVisionClient.isEnabled) {
+      _log('[BrainChannel] routing native Orb call to TempOpenAI text');
+      return TempOpenAIVisionClient.askTextTemp(
+        question: question,
+        screenText: screenText,
+      );
+    }
+
+    final prompt = '''
+You are GPMai Orb, a screen-aware assistant.
+
+User question:
+$question
+
+Visible screen text / OCR context:
+$screenText
+
+No screenshot image was available, so answer from text context only.
+'''.trim();
+
+    return await ModelRouter.getResponse(
+      prompt,
+      modelOverride: modelId.isEmpty ? null : modelId,
+      retries: 1,
+    );
   }
 
   // -------------- Vision-first (15s) --------------

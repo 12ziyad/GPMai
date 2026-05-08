@@ -289,6 +289,7 @@ private var askChatView: View? = null
 private var askChatParams = WindowManager.LayoutParams()
 private var askCompactView: View? = null
 private var askCompactParams = WindowManager.LayoutParams()
+private var askCompactReplyTextView: TextView? = null
 
 private var preferLeftEdge = true
 private var askMode = false
@@ -328,7 +329,7 @@ private enum class FallbackReason {
 }
 
 private fun logFallback(reason: FallbackReason, detail: String = "") {
-    val msg = "â†©ï¸ Fallback: ${reason.name}${if (detail.isNotBlank()) " â€” $detail" else ""}"
+    val msg = "Fallback: ${reason.name}${if (detail.isNotBlank()) " - $detail" else ""}"
     // your onscreen transient log
     addLogLine(msg)
     // terminal / Logcat (filter by: GPMaiFallback)
@@ -521,7 +522,7 @@ private fun createSquareButton(
 }
 
 private fun ensureA11yReady(): Boolean {
-    addLogLine("â„¹ï¸ Accessibility features are disabled (OCR-only mode).")
+    addLogLine("Accessibility features are disabled (OCR-only mode).")
     return true
 }
 
@@ -552,21 +553,21 @@ private fun showThreeSquareButtons() {
     val backBtn = createSquareUiButton("Back") {
         safeClick {
             val ok = pressGlobal(AccessibilityService.GLOBAL_ACTION_BACK)
-            addLogLine(if (ok) "âœ… Navigated back" else "âŒ Back failed â€” enable accessibility")
+            addLogLine(if (ok) "Navigated back" else "Back failed - enable accessibility")
         }
     }
 
     val homeBtn = createSquareUiButton("Home") {
         safeClick {
             val ok = pressGlobal(AccessibilityService.GLOBAL_ACTION_HOME)
-            addLogLine(if (ok) "âœ… Went home" else "âŒ Home failed")
+            addLogLine(if (ok) "Went home" else "Home failed")
         }
     }
 
     val recBtn = createSquareUiButton("Recents") {
         safeClick {
             val ok = pressGlobal(AccessibilityService.GLOBAL_ACTION_RECENTS)
-            addLogLine(if (ok) "âœ… Opened Recents" else "âŒ Recents failed â€” enable accessibility")
+            addLogLine(if (ok) "Opened Recents" else "Recents failed - enable accessibility")
         }
     }
 
@@ -574,7 +575,7 @@ private fun showThreeSquareButtons() {
         safeClick {
             hideThreeSquareButtons()
             dockToNearestEdge()
-            addLogLine("ðŸ›‘ Panel closed")
+            addLogLine("Panel closed")
         }
     }
 
@@ -837,36 +838,128 @@ private fun showAskPanelTextOnly() {
     }
 }
 
+private fun bitmapToJpegBase64(bitmap: Bitmap, quality: Int = 68): String {
+    val out = ByteArrayOutputStream()
+    bitmap.compress(Bitmap.CompressFormat.JPEG, quality, out)
+    return Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP)
+}
+
+private fun showAskCompactReply(reply: String) {
+    try {
+        askCompactReplyTextView?.let {
+            it.text = "GPMai: $reply"
+            askCompactView?.requestLayout()
+            return
+        }
+    } catch (_: Exception) {}
+    Toast.makeText(this, reply, Toast.LENGTH_SHORT).show()
+}
+
 private fun askAboutCurrentScreen(question: String) {
-    // Accessibility text
-    val access = GPMaiAccessibilityService.readVisibleScreenText()
+    Log.d("OrbVision", "askAboutCurrentScreen start")
 
-    // OCR text (silent screenshot capture)
-    val bmp = captureScreenBitmap() // returns null if MediaProjection not ready
+    val access = try {
+        GPMaiAccessibilityService.readVisibleScreenText()
+    } catch (e: Exception) {
+        Log.w("OrbVision", "accessibility read failed: ${e.message}")
+        ""
+    }
+
+    Log.d("OrbVision", "accessibilityTextLen=${access.length}")
+
+    val bmp = try {
+        captureScreenBitmap()
+    } catch (e: Exception) {
+        Log.e("OrbVision", "captureScreenBitmap failed: ${e.message}", e)
+        null
+    }
+
     if (bmp == null) {
-        val prompt = """
-            USER QUESTION:
-            $question
+        Log.w("OrbVision", "screenshot unavailable; using text-only mode")
+        methodChannel.invokeMethod(
+            "askText",
+            mapOf(
+                "question" to question,
+                "screenText" to access,
+                "model" to "google/gemini-2.5-flash-lite"
+            ),
+            object : MethodChannel.Result {
+                override fun success(result: Any?) {
+                    val reply = result?.toString()?.trim().orEmpty()
+                    Log.d("OrbVision", "askText replyLen=${reply.length}")
+                    showAskCompactReply(if (reply.isNotEmpty()) reply else "No reply received.")
+                }
 
-            SCREEN CONTENT (Accessibility only):
-            $access
-        """.trimIndent()
-        sendToBrain(prompt, false, null, null)
+                override fun error(errorCode: String, errorMessage: String?, errorDetails: Any?) {
+                    Log.e("OrbVision", "askText error $errorCode $errorMessage")
+                    showAskCompactReply("Text-only model error. Check logs.")
+                }
+
+                override fun notImplemented() {
+                    Log.e("OrbVision", "askText not implemented")
+                    showAskCompactReply("Orb brain channel not implemented.")
+                }
+            }
+        )
         return
     }
 
     getOCRTextFromBitmap(bmp) { ocr ->
-        val prompt = """
-            USER QUESTION:
-            $question
+        val screenText = buildString {
+            if (access.isNotBlank()) {
+                appendLine("Accessibility:")
+                appendLine(access)
+            }
+            if (ocr.isNotBlank()) {
+                if (access.isNotBlank()) appendLine()
+                appendLine("OCR:")
+                appendLine(ocr)
+            }
+        }.trim()
 
-            SCREEN CONTENT (Accessibility):
-            $access
+        val imageBase64 = try {
+            bitmapToJpegBase64(bmp, 68)
+        } catch (e: Exception) {
+            Log.e("OrbVision", "base64 encode failed: ${e.message}", e)
+            ""
+        }
 
-            SCREEN CONTENT (OCR):
-            $ocr
-        """.trimIndent()
-        sendToBrain(prompt, false, null, null)
+        Log.d("OrbVision", "ocrLen=${ocr.length}")
+        Log.d("OrbVision", "imageBase64Len=${imageBase64.length}")
+        Log.d("OrbVision", "sending model google/gemini-2.5-flash-lite")
+
+        if (imageBase64.isBlank()) {
+            showAskCompactReply("Screenshot encode failed. Using text-only context.")
+            return@getOCRTextFromBitmap
+        }
+
+        methodChannel.invokeMethod(
+            "askVision",
+            mapOf(
+                "question" to question,
+                "screenText" to screenText,
+                "imageBase64" to imageBase64,
+                "mimeType" to "image/jpeg",
+                "model" to "google/gemini-2.5-flash-lite"
+            ),
+            object : MethodChannel.Result {
+                override fun success(result: Any?) {
+                    val reply = result?.toString()?.trim().orEmpty()
+                    Log.d("OrbVision", "askVision replyLen=${reply.length}")
+                    showAskCompactReply(if (reply.isNotEmpty()) reply else "No reply received.")
+                }
+
+                override fun error(errorCode: String, errorMessage: String?, errorDetails: Any?) {
+                    Log.e("OrbVision", "askVision error $errorCode $errorMessage")
+                    showAskCompactReply("Vision model error. Check logs.")
+                }
+
+                override fun notImplemented() {
+                    Log.e("OrbVision", "askVision not implemented")
+                    showAskCompactReply("Orb brain channel not implemented.")
+                }
+            }
+        )
     }
 }
 
@@ -1095,7 +1188,7 @@ private fun showFloatingReadStopBtn() {
             screenReadingActive = false
             stopWatchingForScreenChange()
             try { voiceMouthOverlay.setBackgroundColor(0x00000000) } catch (_: Exception) {}
-            try { voiceMouthOverlay.findViewById<TextView>(R.id.status_label).text = "ðŸ›‘ Not Reading" } catch (_: Exception) {}
+            try { voiceMouthOverlay.findViewById<TextView>(R.id.status_label).text = "Not Reading" } catch (_: Exception) {}
             hideFloatingReadStopBtn()
         }
     }
@@ -1127,7 +1220,7 @@ private fun startWatchingForScreenChange() {
                 val now = System.currentTimeMillis()
 
                 if (isGroqRequestInProgress) {
-                    addLogLine("â³ Skipped: GPMai is still replying")
+                    addLogLine("Skipped: GPMai is still replying")
                 } else if ((now - lastUserVoiceTime) < 5000) { // â± Only if asked within last 5s
                     val current = GPMaiAccessibilityService.readVisibleScreenText()
                     val appName = GPMaiAccessibilityService.getTopAppName(this@OrbService)
@@ -1145,10 +1238,10 @@ private fun startWatchingForScreenChange() {
                         val cleaned = cleanScreenContent(current)
                         sendToBrain(cleaned, false, null, null)
                     } else {
-                        addLogLine("â³ Skipped: No new screen content")
+                        addLogLine("Skipped: No new screen content")
                     }
                 } else {
-                    addLogLine("ðŸ›‘ Skipped: No recent screen request")
+                    addLogLine("Skipped: No recent screen request")
                 }
             } catch (_: Exception) {}
 
@@ -1182,7 +1275,7 @@ private fun stopWatchingForScreenChange() {
     // ðŸ§  Update status text
     try {
         val statusLabel = voiceMouthOverlay.findViewById<TextView>(R.id.status_label)
-        statusLabel.text = "ðŸ›‘ Not Reading"
+        statusLabel.text = "Not Reading"
     } catch (_: Exception) {}
 }
   private fun toggleChatBox() {
@@ -1660,12 +1753,12 @@ private fun saveToFirestore(
         LogStore.markChatTouched(userId, sessionId)
     } catch (_: Exception) { /* no-op */ }
 
-    addLogLine("ðŸ’¾(temp) $sessionType saved (no Firebase)")
+    addLogLine("(temp) $sessionType saved (no Firebase)")
 }
 
 private fun sendToBrain(msg: String, isChat: Boolean, userView: TextView?, replyView: TextView?) {
     if (isGroqRequestInProgress || tts.isSpeaking) {
-        addLogLine("ðŸ›‘ Skipped: GPMai is busy")
+        addLogLine("Skipped: GPMai is busy")
         return
     }
 
@@ -1698,12 +1791,12 @@ private fun sendToBrain(msg: String, isChat: Boolean, userView: TextView?, reply
 
                 // âŒ no speakOut here (user taps the speaker button if they want)
                 isGroqRequestInProgress = false
-                addLogLine("ðŸ‘¤ $msg")
-                addLogLine("ðŸ¤– $clean")
+                addLogLine("User: $msg")
+                addLogLine("Reply: $clean")
             }
 
             override fun error(code: String, msg2: String?, details: Any?) {
-                replyView?.text = "GPMai: Error â€” ${msg2 ?: "unknown"}"
+                replyView?.text = "GPMai: Error - ${msg2 ?: "unknown"}"
                 isGroqRequestInProgress = false
             }
 
@@ -1719,7 +1812,7 @@ private fun sendToBrain(msg: String, isChat: Boolean, userView: TextView?, reply
     val accessText = GPMaiAccessibilityService.readVisibleScreenText()
     val bitmap = captureScreenBitmap()
     if (bitmap == null) {
-        addLogLine("âŒ Failed to capture screen image for OCR")
+        addLogLine("Failed to capture screen image for OCR")
         replyView?.text = "GPMai: I couldn't capture the screen."
         speakOut("I can't read your screen right now.") { isGroqRequestInProgress = false }
         return
@@ -1761,11 +1854,11 @@ private fun sendToBrain(msg: String, isChat: Boolean, userView: TextView?, reply
                 }
 
                 override fun error(code: String, msg2: String?, details: Any?) {
-                    replyView?.text = "GPMai: Error â€” ${msg2 ?: "unknown"}"
+                    replyView?.text = "GPMai: Error - ${msg2 ?: "unknown"}"
                     speakOut("Error from brain: ${msg2 ?: "unknown"}") {
                         isGroqRequestInProgress = false
                     }
-                    addLogLine("âŒ Groq error: $msg2")
+                    addLogLine("Groq error: $msg2")
                 }
 
                 override fun notImplemented() {
@@ -1777,7 +1870,7 @@ private fun sendToBrain(msg: String, isChat: Boolean, userView: TextView?, reply
             })
         } catch (e: Exception) {
             e.printStackTrace()
-            addLogLine("âŒ Brain crashed: ${e.message}")
+            addLogLine("Brain crashed: ${e.message}")
             replyView?.text = "GPMai: Brain crashed"
             speakOut("Brain crashed") { isGroqRequestInProgress = false }
         }
@@ -1830,7 +1923,7 @@ if (intentData.intent != IntentType.UNKNOWN) {
 }
 
                 if (isGroqRequestInProgress || tts.isSpeaking) {
-                    addLogLine("ðŸ›‘ Skipped: Groq or TTS busy")
+                    addLogLine("Skipped: Groq or TTS busy")
                     return
                 }
 
@@ -2712,7 +2805,7 @@ private fun createSquareUiButton(label: String, onClick: () -> Unit): View {
 
 private fun createBlueCloseChip(onClick: () -> Unit): View {
     return TextView(this).apply {
-        text = "âœ•"
+        text = "CLOSE"
         setTextColor(0xFFFFFFFF.toInt())
         textSize = 14f
         setPadding(18, 10, 18, 10)
@@ -2779,7 +2872,7 @@ private fun showAskGreenChat() {
     }
 
     val input = EditText(this).apply {
-        hint = "Type or use Mic button..."
+        hint = "Ask about this screen..."
         setTextColor(0xFFFFFFFF.toInt())
         setHintTextColor(0xAAFFFFFF.toInt())
         setBackgroundColor(0x22000000)
@@ -2790,7 +2883,7 @@ private fun showAskGreenChat() {
         orientation = LinearLayout.HORIZONTAL
     }
     val micBtn = Button(this).apply {
-        text = "ðŸŽ¤"
+        text = "MIC"
         textSize = 18f
         setTextColor(0xFFFFFFFF.toInt())
         background = roundedDrawable(0xFF1B5E20.toInt(), radius = 18f, strokePx = 0) // dark green
@@ -2858,8 +2951,8 @@ private fun askSendMergedScreenQuestion(q: String, onAnswer: (String) -> Unit) {
         val prompt = "USER QUESTION:\n$q\n\nSCREEN CONTENT (Accessibility only):\n$access"
         methodChannel.invokeMethod("handleUserMessage", prompt, object : MethodChannel.Result {
             override fun success(result: Any?) { onAnswer(result?.toString()?.trim().orEmpty()) }
-            override fun error(code: String, msg: String?, details: Any?) { val m = msg ?: "unknown"; onAnswer(if (m.contains("401") || m.contains("Unauthorized")) "Sign in required to use screen-aware answers." else "Could not answer. Check login/server.") }
-            override fun notImplemented() { onAnswer("Brain not available") }
+            override fun error(code: String, msg: String?, details: Any?) { Log.e("OrbBrain", "handleUserMessage(text-only) error code=$code msg=$msg"); onAnswer("Brain error: $code ${msg ?: "unknown"}") }
+            override fun notImplemented() { Log.e("OrbBrain", "handleUserMessage notImplemented — no Dart handler"); onAnswer("Brain channel method not implemented.") }
         })
         return
     }
@@ -2876,8 +2969,8 @@ private fun askSendMergedScreenQuestion(q: String, onAnswer: (String) -> Unit) {
         """.trimIndent()
         methodChannel.invokeMethod("handleUserMessage", prompt, object : MethodChannel.Result {
             override fun success(result: Any?) { onAnswer(result?.toString()?.trim().orEmpty()) }
-            override fun error(code: String, msg: String?, details: Any?) { val m = msg ?: "unknown"; onAnswer(if (m.contains("401") || m.contains("Unauthorized")) "Sign in required to use screen-aware answers." else "Could not answer. Check login/server.") }
-            override fun notImplemented() { onAnswer("Brain not available") }
+            override fun error(code: String, msg: String?, details: Any?) { Log.e("OrbBrain", "handleUserMessage(ocr) error code=$code msg=$msg"); onAnswer("Brain error: $code ${msg ?: "unknown"}") }
+            override fun notImplemented() { Log.e("OrbBrain", "handleUserMessage notImplemented — no Dart handler"); onAnswer("Brain channel method not implemented.") }
         })
     }
 }
@@ -3073,7 +3166,7 @@ private fun showAskPanelPolicySafe() {
         setPadding(0,0,0,12)
     }
     val note = TextView(this).apply {
-        text = "A oneâ€‘time snapshot is taken ONLY after you press Ask."
+        text = "A one-time snapshot is taken ONLY after you press Ask."
         setTextColor(0xAAFFFFFF.toInt()); textSize = 12f
         setPadding(0,0,0,10)
     }
@@ -3086,7 +3179,7 @@ private fun showAskPanelPolicySafe() {
     val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
 
     val micBtn = Button(this).apply {
-        text = "ðŸŽ¤"; textSize = 18f
+        text = "MIC"; textSize = 18f
         background = roundedDrawable(0xFF1B5E20.toInt(), radius = 18f, strokePx = 0)
         setTextColor(0xFFFFFFFF.toInt()); setPadding(22, 10, 22, 10)
         setOnClickListener { startMicIntoEdit(input) }
@@ -3195,7 +3288,7 @@ private fun askAboutScreenPolicySafe(question: String) {
 // ==== COMPACT ASK â€” single Q/A, tiny & draggable, with speaker toggle ====
 // ==== COMPACT ASK â€” single Q/A, tiny & draggable, with speaker toggle ====
 private fun showAskChatCompact() {
-    removeOverlaySafe(askCompactView); askCompactView = null
+    removeOverlaySafe(askCompactView); askCompactView = null; askCompactReplyTextView = null
 
     val overlayFlags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
             WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
@@ -3231,7 +3324,7 @@ private fun showAskChatCompact() {
         isClickable = true
         setOnClickListener { toggleStepsOverlay() }
     }
-    status.text = "Waitingâ€¦ â–¾"
+    status.text = "Waiting..."
     askStatusText = status
 
     // one pair of lines keeps widget small
@@ -3250,6 +3343,7 @@ private fun showAskChatCompact() {
         setPadding(0, 0, dp(6), dp(4))
         layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
     }
+    askCompactReplyTextView = aiLine
     val speakerBtn = ImageButton(this).apply {
         setImageResource(android.R.drawable.ic_lock_silent_mode_off)
         setBackgroundColor(0x00000000)
@@ -3265,7 +3359,7 @@ private fun showAskChatCompact() {
     aiRow.addView(aiLine); aiRow.addView(speakerBtn)
 
     val input = EditText(this).apply {
-        hint = "Type your question..."
+        hint = "Ask about this screen..."
         setTextColor(0xFFFFFFFF.toInt()); setHintTextColor(0x88FFFFFF.toInt())
         setBackgroundColor(0x22000000)
         setPadding(dp(8), dp(6), dp(8), dp(6))
@@ -3283,7 +3377,7 @@ private fun showAskChatCompact() {
     val askBtn = pill(0xFF1976D2.toInt(), "ASK") {
         val q = input.text?.toString()?.trim().orEmpty()
         if (q.isBlank()) {
-            Toast.makeText(this, "Type something or use the mic â†’", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Type something or use the mic.", Toast.LENGTH_SHORT).show()
             return@pill
         }
 
@@ -3302,22 +3396,30 @@ private fun showAskChatCompact() {
             status.visibility = View.VISIBLE
             setAskStatus("Preparing...")
 
-            // 25-second hard timeout
+            // 60-second timeout - covers consent, capture, OCR, and API call.
+            // currentStage is updated at each step so the error message is specific.
+            var currentStage = "awaiting_projection_consent"
             val timeoutHandler = android.os.Handler(android.os.Looper.getMainLooper())
             var answered = false
             val timeoutRunnable = Runnable {
                 if (!answered) {
                     answered = true
-                    aiLine.text = "GPMai: Could not get response. Check login/server connection."
+                    Log.e("OrbVisionFlow", "timeout fired at stage=$currentStage")
+                    aiLine.text = "GPMai: Timeout at stage: $currentStage."
                     setAskStatus("Timeout")
                     speakerBtn.visibility = View.GONE
                     askCompactView?.requestLayout()
                 }
             }
-            timeoutHandler.postDelayed(timeoutRunnable, 25000L)
+            timeoutHandler.postDelayed(timeoutRunnable, 60000L)
+
+            Log.d("OrbVisionFlow", "compact ASK pressed q.len=${q.length}")
+            Log.d("OrbVisionFlow", "startProjectionSession requested")
 
             // start capture & pipeline
             startProjectionSession {
+                Log.d("OrbVisionFlow", "projection consent received")
+                currentStage = "capture_and_brain"
                 hideImeNow()
                 setAskStatus("Capturing screen...")
 
@@ -3325,24 +3427,19 @@ private fun showAskChatCompact() {
                     setAskStatus("Securing...")
 
                     android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                        setAskStatus("Sending...")
+                        currentStage = "invoking_brain"
+                        Log.d("OrbVisionFlow", "askOncePolicySafe entered")
                         setAskStatus("Waiting for reply...")
                         askOncePolicySafe(q) { ans ->
                             if (!answered) {
                                 answered = true
                                 timeoutHandler.removeCallbacks(timeoutRunnable)
                             }
-                            val display = when {
-                                ans.contains("401") || ans.contains("Unauthorized") ->
-                                    "Sign in required to use screen-aware answers."
-                                ans.contains("Error:") && ans.length < 80 ->
-                                    "Could not answer. Check login/server."
-                                ans.isBlank() -> "[No response]"
-                                else -> ans
-                            }
+                            Log.d("OrbVisionFlow", "onAnswer received ans.len=${ans.length}")
+                            val display = if (ans.isBlank()) "No reply received." else ans
                             setAskStatus("Reply received")
                             aiLine.text = "GPMai: $display"
-                            speakerBtn.visibility = if (ans.isBlank() || display.startsWith("Sign in") || display.startsWith("Could not")) View.GONE else View.VISIBLE
+                            speakerBtn.visibility = if (display == "No reply received.") View.GONE else View.VISIBLE
                             isSpeaking = false
                             askCompactView?.requestLayout()
                             android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
@@ -3355,15 +3452,15 @@ private fun showAskChatCompact() {
         }
     }
 
-    val micPill = pill(0xFFFFFFFF.toInt(), "ðŸŽ¤") { startMicIntoEdit(input) }.apply {
+    val micPill = pill(0xFFFFFFFF.toInt(), "MIC") { startMicIntoEdit(input) }.apply {
         setTextColor(0xFF000000.toInt())
     }
 
-    val closePill = pill(0xFFB00020.toInt(), "âœ•") {
+    val closePill = pill(0xFFB00020.toInt(), "CLOSE") {
         stopProjectionSession()
         endAskProgressNotif()                           // remove non-dismissible notif
         removeOverlaySafe(stepsOverlay); stepsOverlay = null; stepsOverlayList = null
-        removeOverlaySafe(askCompactView); askCompactView = null
+        removeOverlaySafe(askCompactView); askCompactView = null; askCompactReplyTextView = null
         scheduleAutoDock()
     }
 
@@ -3463,7 +3560,7 @@ private fun showAskVoiceMode() {
 
     // top-right X
     val close = Button(this).apply {
-        text = "âœ•"
+        text = "Close"
         textSize = 14f
         background = roundedDrawable(0xFFB00020.toInt(), radius = 18f, strokePx = 0)
         setTextColor(0xFFFFFFFF.toInt())
@@ -3480,7 +3577,7 @@ private fun showAskVoiceMode() {
 
     // centered hint
     val hint = TextView(this).apply {
-        text = "Tap ASK to speak. Iâ€™ll capture once and answer with voice."
+        text = "Tap ASK to speak. I will capture once and answer with voice."
         setTextColor(0xFFFFFFFF.toInt()); textSize = 14f
     }
     val hintLp = FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT).apply {
@@ -3656,7 +3753,7 @@ private fun mapToPublicStep(s: String): String {
         listOf("error", "fail", "timeout").any { it in t } -> "Error"
 
         // DONE
-        listOf("done", "complete", "finished", "success").any { it in t } -> "Done âœ…"
+        listOf("done", "complete", "finished", "success").any { it in t } -> "Done"
 
         else -> "Working..."
     }
@@ -3665,7 +3762,7 @@ private fun mapToPublicStep(s: String): String {
 private fun setAskStatus(s: String) {
     val public = mapToPublicStep(s)
     val expanded = stepsOverlay != null
-    val caret = if (expanded) "â–´" else "â–¾"
+    val caret = if (expanded) "+" else ">"
     val full = if (public.isBlank()) "" else "$public  $caret"
 
     val green = 0xFF00E676.toInt()
@@ -3701,6 +3798,7 @@ private fun askScreenWithImageFirst(
     onAnswer: (String) -> Unit,
     alsoSpeak: Boolean = false
 ) {
+    Log.d("OrbVisionFlow", "askScreenWithImageFirst entered")
     if (isSensitiveApp()) {
         val msg = "Screen reading is disabled in this app."
         if (alsoSpeak) speakOut(msg) else onAnswer(msg)
@@ -3766,32 +3864,32 @@ private fun askScreenWithImageFirst(
 
                             setAskStatus("Waiting for reply...")
 
+                            Log.d("OrbVisionFlow", "invoking handleVisionMessage")
                             methodChannel.invokeMethod("handleVisionMessage", payload,
                                 object : MethodChannel.Result {
                                     override fun success(result: Any?) {
-                                        val ans = result?.toString()?.trim().orEmpty().ifBlank { "[No response]" }
-                                        if (alsoSpeak) speakOut(ans) else onAnswer(ans)
+                                        val ans = result?.toString()?.trim().orEmpty()
+                                        val display = if (ans.isBlank()) "No reply returned from brain channel." else ans
+                                        if (ans.isBlank()) Log.e("OrbBrain", "handleVisionMessage success but reply is blank/null")
+                                        Log.d("OrbVisionFlow", "handleVisionMessage success ans.len=${ans.length}")
+                                        if (alsoSpeak) speakOut(display) else onAnswer(display)
                                         setAskStatus("Done")
                                     }
                                     override fun error(code: String, msg: String?, details: Any?) {
-                                        // â¬‡ï¸ Vision API path errored â†’ text fallback
+                                        Log.e("OrbBrain", "handleVisionMessage error code=$code msg=$msg details=$details")
+                                        Log.d("OrbVisionFlow", "handleVisionMessage error code=$code")
                                         logFallback(FallbackReason.API_ERROR, "code=$code msg=${msg ?: "?"}")
-                                        setAskStatus("Fallback (text only)...")
-                                        logFallback(FallbackReason.TEXT_ONLY_PATH, "fallback to askSendMergedScreenQuestion")
-                                        askSendMergedScreenQuestion(question) { ans ->
-                                            if (alsoSpeak) speakOut(ans) else onAnswer(ans)
-                                            setAskStatus("Done")
-                                        }
+                                        val errMsg = "Brain error: $code ${msg ?: "unknown"}"
+                                        if (alsoSpeak) speakOut(errMsg) else onAnswer(errMsg)
+                                        setAskStatus("Error")
                                     }
                                     override fun notImplemented() {
-                                        // â¬‡ï¸ Dart channel not wired
+                                        Log.e("OrbBrain", "handleVisionMessage notImplemented — Dart BrainChannel handler missing")
+                                        Log.d("OrbVisionFlow", "handleVisionMessage notImplemented")
                                         logFallback(FallbackReason.CHANNEL_NOT_IMPLEMENTED, "handleVisionMessage not implemented")
-                                        setAskStatus("Fallback (text only)...")
-                                        logFallback(FallbackReason.TEXT_ONLY_PATH, "fallback to askSendMergedScreenQuestion")
-                                        askSendMergedScreenQuestion(question) { ans ->
-                                            if (alsoSpeak) speakOut(ans) else onAnswer(ans)
-                                            setAskStatus("Done")
-                                        }
+                                        val errMsg = "Brain channel method not implemented."
+                                        if (alsoSpeak) speakOut(errMsg) else onAnswer(errMsg)
+                                        setAskStatus("Error")
                                     }
                                 })
                         }
@@ -4663,7 +4761,7 @@ private fun handleAskStopFromNotif() {
     try { voiceMouthOverlay.visibility = View.GONE } catch (_: Exception) {}
 
     removeOverlaySafe(stepsOverlay); stepsOverlay = null; stepsOverlayList = null
-    removeOverlaySafe(askCompactView); askCompactView = null
+    removeOverlaySafe(askCompactView); askCompactView = null; askCompactReplyTextView = null
     removeOverlaySafe(askChatView);    askChatView = null
     removeOverlaySafe(askPanel);       askPanel = null
 

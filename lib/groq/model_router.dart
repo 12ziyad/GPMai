@@ -25,23 +25,36 @@ class ModelRouter {
     final String? modelId =
         (cleanedOverride != null && cleanedOverride.isNotEmpty) ? cleanedOverride : null;
 
-    // ✅ For now: if contentParts provided, try to pull text and append to prompt
-    // (Image support needs worker changes; we’ll do that later)
-    final extracted = _extractTextFromParts(contentParts);
-    final finalPrompt = extracted.isEmpty ? prompt : '$prompt\n\n$extracted';
+    final isMultimodal = contentParts != null && contentParts.any((p) {
+      final type = (p['type'] ?? '').toString();
+      return type == 'image_url' || type == 'image_base64';
+    });
+
+    final imageParts = _countImageParts(contentParts);
+    final textParts = _countTextParts(contentParts);
+    print('[ModelRouter] multimodal=$isMultimodal imageParts=$imageParts textParts=$textParts model=$modelId');
+
+    final messages = <Map<String, dynamic>>[];
+    if (isMultimodal) {
+      final content = _buildMultimodalContent(prompt, contentParts);
+      messages.add({
+        "role": "user",
+        "content": content,
+      });
+    } else {
+      final extracted = _extractTextFromParts(contentParts);
+      final finalPrompt = extracted.isEmpty ? prompt : '$prompt\n\n$extracted';
+      messages.add({
+        "role": "user",
+        "content": finalPrompt,
+      });
+    }
 
     try {
-      // Build OpenAI-chat style messages (OpenRouter compatible)
-      final messages = <Map<String, dynamic>>[
-        {
-          "role": "user",
-          "content": finalPrompt,
-        }
-      ];
-
       final res = await GpmaiApiClient.chat(
         messages: messages,
         model: modelId, // ✅ can be null => server uses Firestore defaultModel
+        sourceTag: isMultimodal ? 'orb_screen' : null,
       ).timeout(const Duration(seconds: 60));
 
       final text = _extractChatText(res);
@@ -93,5 +106,83 @@ class ModelRouter {
       }
     }
     return buf.toString().trim();
+  }
+
+  static List<Map<String, dynamic>> _buildMultimodalContent(
+    String prompt,
+    List<Map<String, dynamic>>? parts,
+  ) {
+    final content = <Map<String, dynamic>>[];
+
+    final textBuffer = StringBuffer();
+    final cleanPrompt = prompt.trim();
+    if (cleanPrompt.isNotEmpty) {
+      textBuffer.writeln(cleanPrompt);
+    }
+
+    for (final p in parts ?? const <Map<String, dynamic>>[]) {
+      final type = (p['type'] ?? '').toString();
+      if (type == 'text') {
+        final t = (p['text'] ?? '').toString().trim();
+        if (t.isNotEmpty) textBuffer.writeln('\n$t');
+      }
+    }
+
+    final finalText = textBuffer.toString().trim();
+    if (finalText.isNotEmpty) {
+      content.add({
+        'type': 'text',
+        'text': finalText,
+      });
+    }
+
+    for (final p in parts ?? const <Map<String, dynamic>>[]) {
+      final type = (p['type'] ?? '').toString();
+      if (type == 'image_url') {
+        String? url;
+        final imageUrl = p['image_url'];
+        if (imageUrl is Map && imageUrl['url'] != null) {
+          url = imageUrl['url'].toString();
+        } else if (p['url'] != null) {
+          url = p['url'].toString();
+        }
+        if (url != null && url.trim().isNotEmpty) {
+          content.add({
+            'type': 'image_url',
+            'image_url': {
+              'url': url.trim(),
+            },
+          });
+        }
+      }
+
+      if (type == 'image_base64') {
+        final mimeType = (p['mimeType'] ?? p['mime_type'] ?? 'image/jpeg').toString();
+        final data = (p['data'] ?? '').toString().trim();
+        if (data.isNotEmpty) {
+          content.add({
+            'type': 'image_url',
+            'image_url': {
+              'url': 'data:$mimeType;base64,$data',
+            },
+          });
+        }
+      }
+    }
+
+    return content;
+  }
+
+  static int _countImageParts(List<Map<String, dynamic>>? parts) {
+    if (parts == null || parts.isEmpty) return 0;
+    return parts.where((p) {
+      final type = (p['type'] ?? '').toString();
+      return type == 'image_url' || type == 'image_base64';
+    }).length;
+  }
+
+  static int _countTextParts(List<Map<String, dynamic>>? parts) {
+    if (parts == null || parts.isEmpty) return 0;
+    return parts.where((p) => (p['type'] ?? '').toString() == 'text').length;
   }
 }
