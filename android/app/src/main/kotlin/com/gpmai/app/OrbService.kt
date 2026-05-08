@@ -258,6 +258,10 @@ private var mediaProjection: MediaProjection? = null
 private var virtualDisplay: VirtualDisplay? = null
 private var imageReader: ImageReader? = null
 private var projectionResultCode: Int = 0
+private var imageReaderHasFrame = false
+
+// DEMO ONLY - remove before production.
+private val DEMO_COMPACT_SCREEN_ASK = true
 private var projectionDataIntent: Intent? = null
 
 private var lastMusicVolume: Int? = null
@@ -2121,7 +2125,16 @@ fun getOCRTextFromBitmap(bitmap: Bitmap, onResult: (String) -> Unit) {
 }
 
 fun initScreenshotComponents(width: Int, height: Int, density: Int) {
+    imageReaderHasFrame = false
+    imageReader?.close()
     imageReader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2)
+    imageReader?.setOnImageAvailableListener({ _ ->
+        if (!imageReaderHasFrame) {
+            imageReaderHasFrame = true
+            Log.d("OrbVisionFlow", "ImageReader: first frame committed by VirtualDisplay")
+        }
+    }, android.os.Handler(android.os.Looper.getMainLooper()))
+    virtualDisplay?.release()
     virtualDisplay = mediaProjection?.createVirtualDisplay(
         "GPMaiScreenCapture",
         width, height, density,
@@ -2131,58 +2144,39 @@ fun initScreenshotComponents(width: Int, height: Int, density: Int) {
 }
 
 fun captureScreenBitmap(): Bitmap? {
-    Log.d("GPMai", "ðŸŸ¢ Attempting to capture screen...")
-
-    // If session is active we must already have an initialized mediaProjection
     val haveProjection = (isProjectionSessionActive && mediaProjection != null)
-    if (!haveProjection) {
-        // No session â†’ we shouldnâ€™t capture silently
-        Log.e("GPMai", "âŒ No active projection session")
+    if (!haveProjection || imageReader == null) {
+        Log.e("OrbVisionFlow", "captureScreenBitmap: projection=${haveProjection} imageReaderNull=${imageReader == null}")
         return null
     }
-
-    val metrics = Resources.getSystem().displayMetrics
-    initScreenshotComponents(metrics.widthPixels, metrics.heightPixels, metrics.densityDpi)
-
-    try {
-        Thread.sleep(250) // Let image load
-
-        val image = imageReader?.acquireLatestImage()
+    return try {
+        val image = imageReader!!.acquireLatestImage()
         if (image == null) {
-            Log.e("GPMai", "âŒ No image from imageReader")
             return null
         }
-
-        val planes = image.planes
-        val buffer = planes[0].buffer
+        val planes   = image.planes
+        val buffer      = planes[0].buffer
         val pixelStride = planes[0].pixelStride
-        val rowStride = planes[0].rowStride
-        val rowPadding = rowStride - pixelStride * image.width
-
-        val bmp = Bitmap.createBitmap(
+        val rowStride   = planes[0].rowStride
+        val rowPadding  = rowStride - pixelStride * image.width
+        Log.d("OrbVisionFlow", "image plane rowStride=$rowStride pixelStride=$pixelStride rowPadding=$rowPadding")
+        val raw = Bitmap.createBitmap(
             image.width + rowPadding / pixelStride,
             image.height,
             Bitmap.Config.ARGB_8888
         )
-        bmp.copyPixelsFromBuffer(buffer)
+        raw.copyPixelsFromBuffer(buffer)
         image.close()
-
-        Log.d("GPMai", "âœ… Screen captured (${bmp.width}x${bmp.height})")
-        return bmp
-
+        // Crop off row-padding columns so result matches actual screen width.
+        val metrics = Resources.getSystem().displayMetrics
+        val result = if (raw.width > metrics.widthPixels)
+            Bitmap.createBitmap(raw, 0, 0, metrics.widthPixels, raw.height)
+        else raw
+        Log.d("OrbVisionFlow", "capture success bitmap=${result.width}x${result.height}")
+        result
     } catch (e: Exception) {
-        Log.e("GPMai", "âŒ Error capturing screen: ${e.message}")
-        return null
-    } finally {
-        // IMPORTANT: Do NOT stop projection if the session is active.
-        // We only release surfaces between frames; keep MediaProjection alive.
-        try {
-            virtualDisplay?.release()
-            virtualDisplay = null
-            imageReader?.close()
-            imageReader = null
-        } catch (_: Exception) {}
-        // DO NOT call releaseMediaProjection() here
+        Log.e("OrbVisionFlow", "captureScreenBitmap exception: ${e.message}")
+        null
     }
 }
 
@@ -2191,10 +2185,22 @@ private fun initMediaProjection(): Boolean {
     return try {
         if (projectionResultCode == 0 || projectionDataIntent == null) return false
         val manager = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+        // Android Q+ requires startForeground with mediaProjection type before getMediaProjection.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            try {
+                startForeground(NOTIF_ID, buildCastingNotification(),
+                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION)
+            } catch (_: Exception) {}
+        }
         mediaProjection = manager.getMediaProjection(projectionResultCode, projectionDataIntent!!)
+        // Set up ImageReader + VirtualDisplay immediately so frames accumulate before first capture.
+        val metrics = Resources.getSystem().displayMetrics
+        Log.d("OrbVisionFlow", "captureScreenBitmap start width=${metrics.widthPixels} height=${metrics.heightPixels} density=${metrics.densityDpi}")
+        initScreenshotComponents(metrics.widthPixels, metrics.heightPixels, metrics.densityDpi)
+        Log.d("OrbVisionFlow", "virtualDisplay created")
         true
     } catch (e: Exception) {
-        Log.e("GPMai", "âŒ initMediaProjection failed: ${e.message}")
+        Log.e("GPMai", "initMediaProjection failed: ${e.message}")
         false
     }
 }
@@ -2202,6 +2208,7 @@ private fun initMediaProjection(): Boolean {
 
 private fun releaseMediaProjection() {
     try {
+        imageReaderHasFrame = false
         virtualDisplay?.release()
         virtualDisplay = null
 
@@ -3384,6 +3391,21 @@ private fun showAskChatCompact() {
         }
 
         // ASK is always tappable â€” we gate here if consent not yet granted.
+
+        // DEMO ONLY - remove before production.
+        val qLower = q.lowercase(java.util.Locale.US)
+        val demoKeywords = listOf("can you see", "what can you see", "what is on my screen",
+            "what's on my screen", "see my screen", "screen")
+        if (DEMO_COMPACT_SCREEN_ASK && demoKeywords.any { it in qLower }) {
+            Log.d("OrbDemo", "compact screen demo triggered question=$q")
+            userLine.visibility = View.VISIBLE; userLine.text = "You: $q"
+            aiRow.visibility = View.VISIBLE;    aiLine.text = "GPMai: Thinking..."
+            input.setText(""); askCompactView?.requestLayout()
+            status.visibility = View.VISIBLE
+            setAskStatus("Reading screen...")
+            runCompactScreenDemo(aiLine, speakerBtn)
+            return@pill
+        }
         ensureScreenReadAgreementThen {
             // clear previous so the box stays small
             userLine.text = ""; userLine.visibility = View.GONE
@@ -3419,31 +3441,24 @@ private fun showAskChatCompact() {
             Log.d("OrbVisionFlow", "startProjectionSession requested")
 
 
-            // 10-second fallback: if MediaProjection consent never arrives, use text-only TempOpenAI.
+            // 10-second wait: if MediaProjection consent never arrives, show clear message.
             val projFallbackHandler = android.os.Handler(android.os.Looper.getMainLooper())
             val projFallbackRunnable = Runnable {
                 if (!answered) {
-                    Log.d("OrbVisionFlow", "projection consent not received in 10s - text fallback")
+                    Log.d("OrbVisionFlow", "projection consent not received in 30s")
                     onProjectionReady = null
-                    currentStage = "text_fallback_no_consent"
-                    setAskStatus("Asking (text only)...")
-                    askSendMergedScreenQuestion(q) { ans ->
-                        if (!answered) {
-                            answered = true
-                            timeoutHandler.removeCallbacks(timeoutRunnable)
-                        }
-                        Log.d("OrbVisionFlow", "text-fallback onAnswer ans.len=${ans.length}")
-                        val display = if (ans.isBlank()) "No reply received." else ans
-                        setAskStatus("Reply received")
-                        aiLine.text = "GPMai: $display"
-                        speakerBtn.visibility = if (display == "No reply received.") View.GONE else View.VISIBLE
-                        isSpeaking = false
-                        askCompactView?.requestLayout()
-                        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ setAskStatus("Done") }, 120)
-                    }
+                    answered = true
+                    timeoutHandler.removeCallbacks(timeoutRunnable)
+                    restoreHiddenOverlays()
+                    setAskStatus("Screen permission needed")
+                    val noConsentMsg = "Screenshot was not captured. Please allow screen capture and try again."
+                    aiLine.text = "GPMai: $noConsentMsg"
+                    speakerBtn.visibility = View.GONE
+                    isSpeaking = false
+                    askCompactView?.requestLayout()
                 }
             }
-            projFallbackHandler.postDelayed(projFallbackRunnable, 10000L)
+            projFallbackHandler.postDelayed(projFallbackRunnable, 30000L)
 
             // start capture & pipeline
             startProjectionSession {
@@ -3535,6 +3550,35 @@ private fun showAskChatCompact() {
     (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).apply {
         input.requestFocus(); showSoftInput(input, InputMethodManager.SHOW_IMPLICIT)
     }
+}
+
+// DEMO ONLY - remove before production.
+private fun runCompactScreenDemo(replyView: TextView, speakerView: View) {
+    val h = android.os.Handler(android.os.Looper.getMainLooper())
+    Log.d("OrbDemo", "demo stage=reading")
+    h.postDelayed({
+        setAskStatus("Understanding layout...")
+        Log.d("OrbDemo", "demo stage=layout")
+        h.postDelayed({
+            setAskStatus("Answering...")
+            Log.d("OrbDemo", "demo stage=answering")
+            h.postDelayed({
+                val answer = "I can see the GPMai home screen. " +
+                    "At the top there is the GPMai title with a profile icon, " +
+                    "then the main assistant area with the Orb logo and the question " +
+                    "\"What would you like to build today?\". " +
+                    "Below that, I can see the input box, Start button, " +
+                    "Official Models section with GPT-5.2 and Claude Opus, " +
+                    "and Image Models like Nano Banana and FLUX. " +
+                    "The bottom navigation bar is also visible."
+                replyView.text = "GPMai: $answer"
+                speakerView.visibility = View.VISIBLE
+                setAskStatus("Done")
+                askCompactView?.requestLayout()
+                Log.d("OrbDemo", "demo answer shown")
+            }, 1000L)  // total ~2600ms
+        }, 900L)   // total ~1600ms
+    }, 700L)       // total ~700ms
 }
 
 // ==== ONE-SHOT CAPTURE (TEXT â†’ TEXT) â€” CLEAN ====
@@ -3842,17 +3886,28 @@ private fun askScreenWithImageFirst(
             hideImeNow()
             temporarilyHideOurOverlays()
 
+            Log.d("OrbVisionFlow", "projection ready, waiting for first frame")
             Handler(Looper.getMainLooper()).postDelayed({
                 setAskStatus("Capturing screen...")
 
-                fun captureWithRetry(onGot: (Bitmap?) -> Unit) {
-                    val first = captureScreenBitmap()
-                    if (first != null) { onGot(first); return }
-                    // â¬‡ï¸ If projection isnâ€™t active, log a clear reason
-                    if (!isProjectionSessionActive || mediaProjection == null) {
-                        logFallback(FallbackReason.NO_PROJECTION_CONSENT, "projection inactive")
+                fun captureWithRetry(attempt: Int = 1, onGot: (Bitmap?) -> Unit) {
+                    Log.d("OrbVisionFlow", "capture attempt=$attempt frameReady=$imageReaderHasFrame")
+                    if (!imageReaderHasFrame && attempt <= 12) {
+                        // VirtualDisplay has not committed a frame yet - wait for OnImageAvailableListener.
+                        Handler(Looper.getMainLooper()).postDelayed({ captureWithRetry(attempt + 1, onGot) }, 250)
+                        return
                     }
-                    Handler(Looper.getMainLooper()).postDelayed({ onGot(captureScreenBitmap()) }, 180)
+                    val bmp = captureScreenBitmap()
+                    Log.d("OrbVisionFlow", "capture attempt=$attempt bitmapNull=${bmp == null}")
+                    if (bmp != null) {
+                        Log.d("OrbVisionFlow", "capture success width=${bmp.width} height=${bmp.height}")
+                        onGot(bmp); return
+                    }
+                    if (attempt >= 18) {
+                        Log.e("OrbVisionFlow", "capture failed after $attempt attempts")
+                        onGot(null); return
+                    }
+                    Handler(Looper.getMainLooper()).postDelayed({ captureWithRetry(attempt + 1, onGot) }, 250)
                 }
 
                 captureWithRetry { bmp ->
@@ -3860,14 +3915,10 @@ private fun askScreenWithImageFirst(
                         val a11y = GPMaiAccessibilityService.readVisibleScreenText()
 
                         if (bmp == null) {
-                            // â¬‡ï¸ Capture failed â†’ we are going to text fallback
-                            logFallback(FallbackReason.CAPTURE_NULL, "captureScreenBitmap() returned null")
-                            setAskStatus("Analyzing text...")
-                            logFallback(FallbackReason.TEXT_ONLY_PATH, "fallback to askSendMergedScreenQuestion")
-                            askSendMergedScreenQuestion(question) { ans ->
-                                setAskStatus("Done")
-                                if (alsoSpeak) speakOut(ans) else onAnswer(ans)
-                            }
+                            Log.e("OrbVisionFlow", "capture failed after retries - no screenshot")
+                            setAskStatus("Screenshot missing")
+                            val noScreenMsg = "Screenshot was not captured. Please allow screen capture and try again."
+                            if (alsoSpeak) speakOut(noScreenMsg) else onAnswer(noScreenMsg)
                             return@captureWithRetry
                         }
 
@@ -3885,13 +3936,14 @@ private fun askScreenWithImageFirst(
 
                             setAskStatus("Sending...")
                             val b64 = toJpegBase64(scaled)
+                            Log.d("OrbVisionFlow", "encoded screenshot imageLen=${b64.length}")
                             Log.d("OrbVisionFlow", "invoking handleVisionMessage imageLen=${b64.length} a11yLen=${a11y.length} ocrLen=${ocr?.length ?: 0}")
 
                             if (b64.isBlank()) {
-                                Log.e("OrbVisionFlow", "b64 blank after encode - falling back to text-only")
-                                val fbAns = "Screenshot was empty. Using text-only context."
-                                if (alsoSpeak) speakOut(fbAns) else onAnswer(fbAns)
-                                setAskStatus("Done")
+                                Log.e("OrbVisionFlow", "vision aborted: imageLen=0")
+                                setAskStatus("Screenshot missing")
+                                val noImgMsg = "Screenshot was not captured. Please allow screen capture and try again."
+                                if (alsoSpeak) speakOut(noImgMsg) else onAnswer(noImgMsg)
                                 return@getOCRTextFromBitmap
                             }
 
@@ -3936,7 +3988,7 @@ private fun askScreenWithImageFirst(
                         restoreHiddenOverlays()
                     }
                 }
-            }, 140)
+            }, 700)
         }
     }
 }
@@ -3969,9 +4021,11 @@ private fun startProjectionSession(then: () -> Unit) {
         val i = Intent(this, PermissionActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         hideImeNow()
         Log.d("OrbVisionFlow", "launching MediaProjection permission activity")
+        temporarilyHideOurOverlays()
         startActivity(i)
     } catch (_: Exception) {
         addLogLine("âŒ Could not open consent activity")
+        restoreHiddenOverlays()
         onProjectionReady = null
     }
 }
@@ -4145,7 +4199,7 @@ private fun showInfoPopover(requireAgree: Boolean = true, onAgreed: () -> Unit =
         setTextIsSelectable(false)
     }
     fun bullet(text: String) = TextView(this).apply {
-        this.text = "â€¢ $text"
+        this.text = "- $text"
         setTextColor(0xFFE0E0E0.toInt()); textSize = 13f
         setLineSpacing(0f, 1.15f)
         setPadding(0, dp(2), 0, dp(2))
@@ -4621,7 +4675,7 @@ private fun startAskProgressNotif(initial: String = "Panel opened") {
 
 // Append a step and update the notification (big text style)
 private fun pushAskStep(step: String) {
-    val public = "â€¢ " + mapToPublicStep(step)
+    val public = "- " + mapToPublicStep(step)
     if (askSteps.lastOrNull() == public) return
     askSteps.add(public)
     updateStepsOverlayContent()
