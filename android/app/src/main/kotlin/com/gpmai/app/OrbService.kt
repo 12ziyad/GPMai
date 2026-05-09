@@ -110,8 +110,8 @@ class OrbService : Service(), TextToSpeech.OnInitListener {
         @JvmStatic @Volatile var isActive = false
     }
 
-    /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ TEMP log store (no persistence) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-   /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ TEMP log store (no persistence) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ In-memory log store (no persistence) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+   /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ In-memory log store (no persistence) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 private object LogStore {
     fun nowTs(): Long = System.currentTimeMillis()
 
@@ -259,9 +259,6 @@ private var virtualDisplay: VirtualDisplay? = null
 private var imageReader: ImageReader? = null
 private var projectionResultCode: Int = 0
 private var imageReaderHasFrame = false
-
-// DEMO ONLY - remove before production.
-private val DEMO_COMPACT_SCREEN_ASK = true
 private var projectionDataIntent: Intent? = null
 
 private var lastMusicVolume: Int? = null
@@ -881,32 +878,8 @@ private fun askAboutCurrentScreen(question: String) {
     }
 
     if (bmp == null) {
-        Log.w("OrbVision", "screenshot unavailable; using text-only mode")
-        methodChannel.invokeMethod(
-            "askText",
-            mapOf(
-                "question" to question,
-                "screenText" to access,
-                "model" to "google/gemini-2.5-flash-lite"
-            ),
-            object : MethodChannel.Result {
-                override fun success(result: Any?) {
-                    val reply = result?.toString()?.trim().orEmpty()
-                    Log.d("OrbVision", "askText replyLen=${reply.length}")
-                    showAskCompactReply(if (reply.isNotEmpty()) reply else "No reply received.")
-                }
-
-                override fun error(errorCode: String, errorMessage: String?, errorDetails: Any?) {
-                    Log.e("OrbVision", "askText error $errorCode $errorMessage")
-                    showAskCompactReply("Text-only model error. Check logs.")
-                }
-
-                override fun notImplemented() {
-                    Log.e("OrbVision", "askText not implemented")
-                    showAskCompactReply("Orb brain channel not implemented.")
-                }
-            }
-        )
+        Log.w("OrbVision", "screenshot unavailable")
+        showAskCompactReply("Screenshot capture failed. Please allow screen capture and try again.")
         return
     }
 
@@ -935,7 +908,7 @@ private fun askAboutCurrentScreen(question: String) {
         Log.d("OrbVision", "sending model google/gemini-2.5-flash-lite")
 
         if (imageBase64.isBlank()) {
-            showAskCompactReply("Screenshot encode failed. Using text-only context.")
+            showAskCompactReply("Screenshot capture failed. Please allow screen capture and try again.")
             return@getOCRTextFromBitmap
         }
 
@@ -1575,7 +1548,7 @@ private fun speakOutInline(text: String, onDone: (() -> Unit)? = null) {
     isTtsPaused = false
     lastSpokenText = text
 
-    // ðŸ”Ž TEMP LOG ONLY (no persistence)
+    // Diagnostic log only (no persistence)
     // 'lastLogText' -> whatever you captured from user/screen last
     // 'currentMood' -> your current orb mood string
     try {
@@ -2957,29 +2930,28 @@ private fun askSendMergedScreenQuestion(q: String, onAnswer: (String) -> Unit) {
     val access = GPMaiAccessibilityService.readVisibleScreenText()
     val bmp = captureScreenBitmap()
     if (bmp == null) {
-        val prompt = "USER QUESTION:\n$q\n\nSCREEN CONTENT (Accessibility only):\n$access"
-        methodChannel.invokeMethod("handleUserMessage", prompt, object : MethodChannel.Result {
-            override fun success(result: Any?) { onAnswer(result?.toString()?.trim().orEmpty()) }
-            override fun error(code: String, msg: String?, details: Any?) { Log.e("OrbBrain", "handleUserMessage(text-only) error code=$code msg=$msg"); onAnswer("Brain error: $code ${msg ?: "unknown"}") }
-            override fun notImplemented() { Log.e("OrbBrain", "handleUserMessage notImplemented — no Dart handler"); onAnswer("Brain channel method not implemented.") }
-        })
+        Log.w("OrbVision", "screenshot unavailable")
+        onAnswer("Screenshot capture failed. Please allow screen capture and try again.")
         return
     }
     getOCRTextFromBitmap(bmp) { ocr ->
-        val prompt = """
-            USER QUESTION:
-            $q
+        val b64 = toJpegBase64(bmp)
+        if (b64.isBlank()) {
+            Log.e("OrbVision", "vision aborted: imageLen=0")
+            onAnswer("Screenshot capture failed. Please allow screen capture and try again.")
+            return@getOCRTextFromBitmap
+        }
 
-            SCREEN CONTENT (Accessibility):
-            $access
-
-            SCREEN CONTENT (OCR):
-            $ocr
-        """.trimIndent()
-        methodChannel.invokeMethod("handleUserMessage", prompt, object : MethodChannel.Result {
+        val payload = mapOf(
+            "question" to q,
+            "image_base64_jpeg" to b64,
+            "a11y_text" to access,
+            "ocr_text" to (ocr ?: "")
+        )
+        methodChannel.invokeMethod("handleVisionMessage", payload, object : MethodChannel.Result {
             override fun success(result: Any?) { onAnswer(result?.toString()?.trim().orEmpty()) }
-            override fun error(code: String, msg: String?, details: Any?) { Log.e("OrbBrain", "handleUserMessage(ocr) error code=$code msg=$msg"); onAnswer("Brain error: $code ${msg ?: "unknown"}") }
-            override fun notImplemented() { Log.e("OrbBrain", "handleUserMessage notImplemented — no Dart handler"); onAnswer("Brain channel method not implemented.") }
+            override fun error(code: String, msg: String?, details: Any?) { Log.e("OrbBrain", "handleVisionMessage error code=$code msg=$msg"); onAnswer("Brain error: $code ${msg ?: "unknown"}") }
+            override fun notImplemented() { Log.e("OrbBrain", "handleVisionMessage notImplemented — no Dart handler"); onAnswer("Brain channel method not implemented.") }
         })
     }
 }
@@ -3392,20 +3364,6 @@ private fun showAskChatCompact() {
 
         // ASK is always tappable â€” we gate here if consent not yet granted.
 
-        // DEMO ONLY - remove before production.
-        val qLower = q.lowercase(java.util.Locale.US)
-        val demoKeywords = listOf("can you see", "what can you see", "what is on my screen",
-            "what's on my screen", "see my screen", "screen")
-        if (DEMO_COMPACT_SCREEN_ASK && demoKeywords.any { it in qLower }) {
-            Log.d("OrbDemo", "compact screen demo triggered question=$q")
-            userLine.visibility = View.VISIBLE; userLine.text = "You: $q"
-            aiRow.visibility = View.VISIBLE;    aiLine.text = "GPMai: Thinking..."
-            input.setText(""); askCompactView?.requestLayout()
-            status.visibility = View.VISIBLE
-            setAskStatus("Reading screen...")
-            runCompactScreenDemo(aiLine, speakerBtn)
-            return@pill
-        }
         ensureScreenReadAgreementThen {
             // clear previous so the box stays small
             userLine.text = ""; userLine.visibility = View.GONE
@@ -3445,13 +3403,13 @@ private fun showAskChatCompact() {
             val projFallbackHandler = android.os.Handler(android.os.Looper.getMainLooper())
             val projFallbackRunnable = Runnable {
                 if (!answered) {
-                    Log.d("OrbVisionFlow", "projection consent not received in 30s")
+                    Log.d("OrbVisionFlow", "screen capture consent timed out after 30s")
                     onProjectionReady = null
                     answered = true
                     timeoutHandler.removeCallbacks(timeoutRunnable)
                     restoreHiddenOverlays()
                     setAskStatus("Screen permission needed")
-                    val noConsentMsg = "Screenshot was not captured. Please allow screen capture and try again."
+                    val noConsentMsg = "Screenshot capture failed. Please allow screen capture and try again."
                     aiLine.text = "GPMai: $noConsentMsg"
                     speakerBtn.visibility = View.GONE
                     isSpeaking = false
@@ -3550,35 +3508,6 @@ private fun showAskChatCompact() {
     (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).apply {
         input.requestFocus(); showSoftInput(input, InputMethodManager.SHOW_IMPLICIT)
     }
-}
-
-// DEMO ONLY - remove before production.
-private fun runCompactScreenDemo(replyView: TextView, speakerView: View) {
-    val h = android.os.Handler(android.os.Looper.getMainLooper())
-    Log.d("OrbDemo", "demo stage=reading")
-    h.postDelayed({
-        setAskStatus("Understanding layout...")
-        Log.d("OrbDemo", "demo stage=layout")
-        h.postDelayed({
-            setAskStatus("Answering...")
-            Log.d("OrbDemo", "demo stage=answering")
-            h.postDelayed({
-                val answer = "I can see the GPMai home screen. " +
-                    "At the top there is the GPMai title with a profile icon, " +
-                    "then the main assistant area with the Orb logo and the question " +
-                    "\"What would you like to build today?\". " +
-                    "Below that, I can see the input box, Start button, " +
-                    "Official Models section with GPT-5.2 and Claude Opus, " +
-                    "and Image Models like Nano Banana and FLUX. " +
-                    "The bottom navigation bar is also visible."
-                replyView.text = "GPMai: $answer"
-                speakerView.visibility = View.VISIBLE
-                setAskStatus("Done")
-                askCompactView?.requestLayout()
-                Log.d("OrbDemo", "demo answer shown")
-            }, 1000L)  // total ~2600ms
-        }, 900L)   // total ~1600ms
-    }, 700L)       // total ~700ms
 }
 
 // ==== ONE-SHOT CAPTURE (TEXT â†’ TEXT) â€” CLEAN ====
@@ -3917,7 +3846,7 @@ private fun askScreenWithImageFirst(
                         if (bmp == null) {
                             Log.e("OrbVisionFlow", "capture failed after retries - no screenshot")
                             setAskStatus("Screenshot missing")
-                            val noScreenMsg = "Screenshot was not captured. Please allow screen capture and try again."
+                            val noScreenMsg = "Screenshot capture failed. Please allow screen capture and try again."
                             if (alsoSpeak) speakOut(noScreenMsg) else onAnswer(noScreenMsg)
                             return@captureWithRetry
                         }
@@ -3942,7 +3871,7 @@ private fun askScreenWithImageFirst(
                             if (b64.isBlank()) {
                                 Log.e("OrbVisionFlow", "vision aborted: imageLen=0")
                                 setAskStatus("Screenshot missing")
-                                val noImgMsg = "Screenshot was not captured. Please allow screen capture and try again."
+                                val noImgMsg = "Screenshot capture failed. Please allow screen capture and try again."
                                 if (alsoSpeak) speakOut(noImgMsg) else onAnswer(noImgMsg)
                                 return@getOCRTextFromBitmap
                             }
@@ -4228,7 +4157,7 @@ private fun showInfoPopover(requireAgree: Boolean = true, onAgreed: () -> Unit =
         h("Processing & security"),
         bullet("Data is encrypted in transit. Sensitive fields may be masked or ignored."),
         bullet("The snapshot is not stored by the app; it is discarded after answering."),
-        bullet("If analysis fails, we may fall back to text-only analysis of readable on-screen text."),
+        bullet("If screenshot capture fails, GPMai will show a clear capture error."),
 
         h("When to avoid"),
         bullet("Banking, OTP, passwords, or other highly sensitive pages."),

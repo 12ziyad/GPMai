@@ -27,7 +27,9 @@ class DebateRoomEngine {
       liveWindowOpen: false,
       clearLiveEndsAt: true,
     );
-    await onUpdate(DebateRunUpdate(session: session, toast: 'Opening Debate Room'));
+    await onUpdate(
+      DebateRunUpdate(session: session, toast: 'Opening Debate Room'),
+    );
 
     final openingAnswers = <String, String>{};
     final liveMessages = <String, List<String>>{};
@@ -36,12 +38,44 @@ class DebateRoomEngine {
     final consumedInterventionIds = <String>{};
 
     final depth = session.depth.toLowerCase();
-    final openingWordBudget = depth == 'deep' ? 90 : depth == 'fast' ? 55 : 70;
-    final discussionWordBudget = depth == 'deep' ? 60 : depth == 'fast' ? 36 : 48;
-    final finalWordBudget = depth == 'deep' ? 90 : depth == 'fast' ? 58 : 72;
-    final maxLiveMessages = depth == 'deep' ? 10 : depth == 'fast' ? 5 : 7;
-    final liveWindow = Duration(seconds: depth == 'deep' ? 95 : depth == 'fast' ? 45 : 70);
-    final delayMs = depth == 'deep' ? 520 : depth == 'fast' ? 320 : 420;
+    final openingWordBudget =
+        depth == 'deep'
+            ? 90
+            : depth == 'fast'
+            ? 55
+            : 70;
+    final discussionWordBudget =
+        depth == 'deep'
+            ? 60
+            : depth == 'fast'
+            ? 36
+            : 48;
+    final finalWordBudget =
+        depth == 'deep'
+            ? 90
+            : depth == 'fast'
+            ? 58
+            : 72;
+    final maxLiveMessages =
+        depth == 'deep'
+            ? 10
+            : depth == 'fast'
+            ? 5
+            : 7;
+    final liveWindow = Duration(
+      seconds:
+          depth == 'deep'
+              ? 95
+              : depth == 'fast'
+              ? 45
+              : 70,
+    );
+    final delayMs =
+        depth == 'deep'
+            ? 520
+            : depth == 'fast'
+            ? 320
+            : 420;
 
     var eventCounter = session.events.length;
     DebateRoomEvent makeEvent({
@@ -74,8 +108,14 @@ class DebateRoomEngine {
       session = session.copyWith(
         title: latest.title,
         pinned: latest.pinned,
-        events: latest.events.length > session.events.length ? latest.events : session.events,
-        updatedAt: latest.updatedAt.isAfter(session.updatedAt) ? latest.updatedAt : session.updatedAt,
+        events:
+            latest.events.length > session.events.length
+                ? latest.events
+                : session.events,
+        updatedAt:
+            latest.updatedAt.isAfter(session.updatedAt)
+                ? latest.updatedAt
+                : session.updatedAt,
         liveWindowOpen: latest.liveWindowOpen,
         liveEndsAt: latest.liveEndsAt,
       );
@@ -138,7 +178,11 @@ class DebateRoomEngine {
     Future<void> processInterventions({required String stage}) async {
       await mergeLatest();
       final pending = session.events
-          .where((e) => e.type == 'user_intervention' && !consumedInterventionIds.contains(e.id))
+          .where(
+            (e) =>
+                e.type == 'user_intervention' &&
+                !consumedInterventionIds.contains(e.id),
+          )
           .toList(growable: false)
         ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
 
@@ -171,7 +215,8 @@ class DebateRoomEngine {
       round: 0,
       stage: 'Opening Views',
       type: 'system',
-      content: 'The panel is entering the room. Each selected model is giving one sharp opening take first.',
+      content:
+          'The panel is entering the room. Each selected model is giving one sharp opening take first.',
       activeStage: 'Opening Views',
       liveWindowOpen: false,
       clearLiveEndsAt: true,
@@ -191,7 +236,9 @@ class DebateRoomEngine {
         temperature: 0.65,
       );
       openingAnswers[participant.modelId] = opening;
-      liveMessages.putIfAbsent(participant.modelId, () => <String>[]).add(opening);
+      liveMessages
+          .putIfAbsent(participant.modelId, () => <String>[])
+          .add(opening);
       await addEvent(
         round: 1,
         stage: 'Opening Views',
@@ -230,7 +277,8 @@ class DebateRoomEngine {
       round: 2,
       stage: 'Live Panel Discussion',
       type: 'system',
-      content: 'LIVE panel discussion is open. The three models are now reacting to each other and trying to build one stronger shared direction.',
+      content:
+          'LIVE panel discussion is open. The three models are now reacting to each other and trying to build one stronger shared direction.',
       activeStage: 'Live Panel Discussion',
       activeModelId: null,
       liveWindowOpen: true,
@@ -263,12 +311,17 @@ class DebateRoomEngine {
           participant: participant,
           transcript: transcript,
           liveIndex: liveIndex + 1,
-          remainingSeconds: math.max(0, liveEndsAt.difference(DateTime.now()).inSeconds),
+          remainingSeconds: math.max(
+            0,
+            liveEndsAt.difference(DateTime.now()).inSeconds,
+          ),
         ),
         maxOutputTokens: 180,
         temperature: 0.78,
       );
-      liveMessages.putIfAbsent(participant.modelId, () => <String>[]).add(liveMessage);
+      liveMessages
+          .putIfAbsent(participant.modelId, () => <String>[])
+          .add(liveMessage);
       await addEvent(
         round: 2,
         stage: 'Live Panel Discussion',
@@ -313,7 +366,8 @@ class DebateRoomEngine {
       round: 3,
       stage: 'Shared Final Structure',
       type: 'system',
-      content: 'The live window is closed. Each model is now helping shape one final answer the whole panel can support.',
+      content:
+          'The live window is closed. Each model is now helping shape one final answer the whole panel can support.',
       activeStage: 'Shared Final Structure',
       activeModelId: null,
     );
@@ -366,7 +420,8 @@ class DebateRoomEngine {
       modelId: moderatorModel,
       provider: 'Moderator',
       modelName: 'Moderator',
-      content: 'I have a shared draft now. I am asking each model for approval or a correction only.',
+      content:
+          'I have a shared draft now. I am asking each model for approval or a correction only.',
       activeStage: 'Consensus Check',
       activeModelId: null,
     );
@@ -425,7 +480,8 @@ class DebateRoomEngine {
         modelId: moderatorModel,
         provider: 'Moderator',
         modelName: 'Moderator',
-        content: 'A correction pass was needed. I revised the shared draft and ran one more approval check.',
+        content:
+            'A correction pass was needed. I revised the shared draft and ran one more approval check.',
         activeStage: 'Consensus Check',
         activeModelId: null,
       );
@@ -554,11 +610,12 @@ Speak naturally like a panelist giving a first take.
     required DebateRoomSession session,
     required Map<String, String> openingAnswers,
   }) {
-    final buffer = StringBuffer()
-      ..writeln('Debate Room moderator summary after opening takes.')
-      ..writeln('Question: ${session.question}')
-      ..writeln('Goal: ${session.goal}')
-      ..writeln();
+    final buffer =
+        StringBuffer()
+          ..writeln('Debate Room moderator summary after opening takes.')
+          ..writeln('Question: ${session.question}')
+          ..writeln('Goal: ${session.goal}')
+          ..writeln();
     for (final participant in session.participants) {
       buffer
         ..writeln('### ${participant.displayName}')
@@ -566,7 +623,9 @@ Speak naturally like a panelist giving a first take.
         ..writeln();
     }
     buffer.writeln('Return one short moderator summary for the user.');
-    buffer.writeln('Explain where each model stands, what the main tension is, and what the panel needs to resolve next.');
+    buffer.writeln(
+      'Explain where each model stands, what the main tension is, and what the panel needs to resolve next.',
+    );
     return buffer.toString().trim();
   }
 
@@ -662,20 +721,23 @@ Focus on the shared answer, not your solo answer.
     required String transcript,
     required Map<String, String> sharedDraftSuggestions,
   }) {
-    final buffer = StringBuffer()
-      ..writeln('Debate Room moderator shared draft request')
-      ..writeln('Question: ${session.question}')
-      ..writeln('Goal: ${session.goal}')
-      ..writeln('Output style: ${session.outputStyle}')
-      ..writeln()
-      ..writeln('Recent transcript:')
-      ..writeln(transcript)
-      ..writeln();
+    final buffer =
+        StringBuffer()
+          ..writeln('Debate Room moderator shared draft request')
+          ..writeln('Question: ${session.question}')
+          ..writeln('Goal: ${session.goal}')
+          ..writeln('Output style: ${session.outputStyle}')
+          ..writeln()
+          ..writeln('Recent transcript:')
+          ..writeln(transcript)
+          ..writeln();
 
     for (final participant in session.participants) {
       buffer
         ..writeln('### ${participant.displayName} suggested shared structure')
-        ..writeln(sharedDraftSuggestions[participant.modelId] ?? 'No suggestion.')
+        ..writeln(
+          sharedDraftSuggestions[participant.modelId] ?? 'No suggestion.',
+        )
         ..writeln();
     }
 
@@ -711,13 +773,14 @@ Do not explain anything else.
     required String currentDraft,
     required Map<String, String> approvalReplies,
   }) {
-    final buffer = StringBuffer()
-      ..writeln('Debate Room moderator revision pass')
-      ..writeln('Question: ${session.question}')
-      ..writeln()
-      ..writeln('Current draft:')
-      ..writeln(currentDraft)
-      ..writeln();
+    final buffer =
+        StringBuffer()
+          ..writeln('Debate Room moderator revision pass')
+          ..writeln('Question: ${session.question}')
+          ..writeln()
+          ..writeln('Current draft:')
+          ..writeln(currentDraft)
+          ..writeln();
 
     for (final participant in session.participants) {
       buffer
@@ -726,7 +789,9 @@ Do not explain anything else.
         ..writeln();
     }
 
-    buffer.writeln('Revise the draft only where needed so it better reflects the panel.');
+    buffer.writeln(
+      'Revise the draft only where needed so it better reflects the panel.',
+    );
     buffer.writeln('Keep it clean and user-ready.');
     return buffer.toString().trim();
   }
@@ -737,15 +802,18 @@ Do not explain anything else.
     required Map<String, String> approvalReplies,
     required int approvedCount,
   }) {
-    final buffer = StringBuffer()
-      ..writeln('Debate Room final clean answer')
-      ..writeln('Question: ${session.question}')
-      ..writeln('Output style: ${session.outputStyle}')
-      ..writeln('Approved count: $approvedCount of ${session.participants.length}')
-      ..writeln()
-      ..writeln('Draft:')
-      ..writeln(draft)
-      ..writeln();
+    final buffer =
+        StringBuffer()
+          ..writeln('Debate Room final clean answer')
+          ..writeln('Question: ${session.question}')
+          ..writeln('Output style: ${session.outputStyle}')
+          ..writeln(
+            'Approved count: $approvedCount of ${session.participants.length}',
+          )
+          ..writeln()
+          ..writeln('Draft:')
+          ..writeln(draft)
+          ..writeln();
 
     for (final participant in session.participants) {
       buffer
@@ -759,20 +827,29 @@ Do not explain anything else.
     buffer.writeln('## What The Panel Agreed On');
     buffer.writeln('## Best Next Move');
     buffer.writeln('## Consensus Status');
-    buffer.writeln('In Consensus Status, mention if all 3 models approved or if one final correction remained.');
+    buffer.writeln(
+      'In Consensus Status, mention if all 3 models approved or if one final correction remained.',
+    );
     return buffer.toString().trim();
   }
 
-  static String _recentTranscript(List<DebateRoomEvent> events, {int maxItems = 10}) {
+  static String _recentTranscript(
+    List<DebateRoomEvent> events, {
+    int maxItems = 10,
+  }) {
     final visible = events
         .where((e) => e.type != 'system' && e.type != 'summary')
         .toList(growable: false);
-    final recent = visible.length <= maxItems ? visible : visible.sublist(visible.length - maxItems);
+    final recent =
+        visible.length <= maxItems
+            ? visible
+            : visible.sublist(visible.length - maxItems);
     final buffer = StringBuffer();
     for (final event in recent) {
-      final name = (event.modelName ?? event.provider ?? 'Room').trim().isEmpty
-          ? 'Room'
-          : (event.modelName ?? event.provider ?? 'Room');
+      final name =
+          (event.modelName ?? event.provider ?? 'Room').trim().isEmpty
+              ? 'Room'
+              : (event.modelName ?? event.provider ?? 'Room');
       buffer.writeln('$name: ${_compress(event.content)}');
     }
     return buffer.toString().trim();
@@ -780,7 +857,9 @@ Do not explain anything else.
 
   static bool _isApproval(String raw) {
     final text = raw.trim().toLowerCase();
-    return text == 'approve' || text.startsWith('approve\n') || text.startsWith('approve ');
+    return text == 'approve' ||
+        text.startsWith('approve\n') ||
+        text.startsWith('approve ');
   }
 
   static String _compress(String text) {
@@ -790,6 +869,7 @@ Do not explain anything else.
   }
 
   static String _pickModeratorModel() {
+    // Production routing: prefer Claude first.
     const candidates = <String>[
       'anthropic/claude-opus-4.6',
       'anthropic/claude-sonnet-4.6',

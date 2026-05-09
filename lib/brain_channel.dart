@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'groq/model_router.dart';
-import 'services/temp_openai_vision_client.dart';
 
 class BrainChannel {
   BrainChannel._();
@@ -27,67 +26,69 @@ class BrainChannel {
   static void init() {
     _channel.setMethodCallHandler(_onNativeCall);
     _log('[BrainChannel] initialized');
-    TempOpenAIVisionClient.logStatus();
   }
 
   static Future<dynamic> _onNativeCall(MethodCall call) async {
-    _log('[BrainChannel] method=${call.method} tempOpenAI enabled=${TempOpenAIVisionClient.isEnabled} keyPresent=${TempOpenAIVisionClient.keyPresent}');
+    _log('[BrainChannel] method=${call.method}');
     switch (call.method) {
       case 'askVision':
         return await _askVisionFromNative(
-            Map<String, dynamic>.from(call.arguments as Map? ?? {}));
+          Map<String, dynamic>.from(call.arguments as Map? ?? {}),
+        );
       case 'askText':
         return await _askTextFromNative(
-            Map<String, dynamic>.from(call.arguments as Map? ?? {}));
+          Map<String, dynamic>.from(call.arguments as Map? ?? {}),
+        );
       case 'handleVisionMessage':
         return await _askVisionFromNative(
-            Map<String, dynamic>.from(call.arguments as Map? ?? {}));
+          Map<String, dynamic>.from(call.arguments as Map? ?? {}),
+        );
       case 'handleUserMessage':
         return await _askTextFromNative(
-            Map<String, dynamic>.from({'question': (call.arguments ?? '').toString()}));
+          Map<String, dynamic>.from({
+            'question': (call.arguments ?? '').toString(),
+          }),
+        );
       default:
         return null;
     }
   }
 
-  static Future<String> _askVisionFromNative(
-      Map<String, dynamic> args) async {
+  static Future<String> _askVisionFromNative(Map<String, dynamic> args) async {
     final question = (args['question'] ?? '').toString().trim();
 
     // Merge all screen-text variants that Kotlin may send
     final directScreenText = (args['screenText'] ?? '').toString().trim();
-    final a11yText = (args['a11y_text'] ?? args['a11yText'] ?? '').toString().trim();
-    final ocrText = (args['ocr_text'] ?? args['ocrText'] ?? '').toString().trim();
-    final screenText = [
-      if (directScreenText.isNotEmpty) directScreenText,
-      if (a11yText.isNotEmpty) 'Accessibility text:\n$a11yText',
-      if (ocrText.isNotEmpty) 'OCR text:\n$ocrText',
-    ].join('\n\n').trim();
+    final a11yText =
+        (args['a11y_text'] ?? args['a11yText'] ?? '').toString().trim();
+    final ocrText =
+        (args['ocr_text'] ?? args['ocrText'] ?? '').toString().trim();
+    final screenText =
+        [
+          if (directScreenText.isNotEmpty) directScreenText,
+          if (a11yText.isNotEmpty) 'Accessibility text:\n$a11yText',
+          if (ocrText.isNotEmpty) 'OCR text:\n$ocrText',
+        ].join('\n\n').trim();
 
     // Accept any image-base64 key variant Kotlin may use
-    final imageBase64 = (args['imageBase64'] ??
-            args['image_base64_jpeg'] ??
-            args['imageBase64Jpeg'] ??
-            '')
-        .toString()
-        .trim();
+    final imageBase64 =
+        (args['imageBase64'] ??
+                args['image_base64_jpeg'] ??
+                args['imageBase64Jpeg'] ??
+                '')
+            .toString()
+            .trim();
 
     final mimeType = (args['mimeType'] ?? 'image/jpeg').toString();
-    final modelId = (args['model'] ?? 'google/gemini-2.5-flash-lite').toString();
+    final modelId =
+        (args['model'] ?? 'google/gemini-2.5-flash-lite').toString();
 
-    _log('[BrainChannel] vision args questionLen=${question.length} screenTextLen=${screenText.length} imageLen=${imageBase64.length}');
+    _log(
+      '[BrainChannel] vision args questionLen=${question.length} screenTextLen=${screenText.length} imageLen=${imageBase64.length}',
+    );
 
-    if (TempOpenAIVisionClient.isEnabled) {
-      _log('[BrainChannel] routing native Orb call to TempOpenAI vision');
-      return TempOpenAIVisionClient.ask(
-        question: question,
-        screenText: screenText,
-        imageBase64: imageBase64,
-        mimeType: mimeType,
-      );
-    }
-
-    final prompt = '''
+    final prompt =
+        '''
 You are GPMai Orb, a screen-aware assistant.
 
 User question:
@@ -100,10 +101,7 @@ Answer based on the screenshot and screen context. Be concise and helpful.
 '''.trim();
 
     final parts = <Map<String, dynamic>>[
-      {
-        'type': 'text',
-        'text': 'Screen context:\n$screenText',
-      }
+      {'type': 'text', 'text': 'Screen context:\n$screenText'},
     ];
 
     if (imageBase64.isNotEmpty) {
@@ -122,21 +120,13 @@ Answer based on the screenshot and screen context. Be concise and helpful.
     );
   }
 
-  static Future<String> _askTextFromNative(
-      Map<String, dynamic> args) async {
+  static Future<String> _askTextFromNative(Map<String, dynamic> args) async {
     final question = (args['question'] ?? '').toString().trim();
     final screenText = (args['screenText'] ?? '').toString().trim();
     final modelId = (args['model'] ?? '').toString().trim();
 
-    if (TempOpenAIVisionClient.isEnabled) {
-      _log('[BrainChannel] routing native Orb call to TempOpenAI text');
-      return TempOpenAIVisionClient.askTextTemp(
-        question: question,
-        screenText: screenText,
-      );
-    }
-
-    final prompt = '''
+    final prompt =
+        '''
 You are GPMai Orb, a screen-aware assistant.
 
 User question:
@@ -180,9 +170,9 @@ No screenshot image was available, so answer from text context only.
           "content": [
             {"type": "input_text", "text": _visionSystemFewshot()},
             {"type": "input_text", "text": "Question: $question"},
-            {"type": "input_image", "image_url": dataUrl}
-          ]
-        }
+            {"type": "input_image", "image_url": dataUrl},
+          ],
+        },
       ];
 
       final started = DateTime.now().millisecondsSinceEpoch;
@@ -245,8 +235,18 @@ $ocr
     String tag = 'TextOnly',
   }) async {
     final input = [
-      {"role": "system", "content": [{"type": "input_text", "text": system}]},
-      {"role": "user", "content": [{"type": "input_text", "text": user}]}
+      {
+        "role": "system",
+        "content": [
+          {"type": "input_text", "text": system},
+        ],
+      },
+      {
+        "role": "user",
+        "content": [
+          {"type": "input_text", "text": user},
+        ],
+      },
     ];
     return _responses(model: _defaultModel, input: input, tag: tag);
   }

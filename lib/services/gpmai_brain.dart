@@ -84,9 +84,10 @@ class GPMaiBrain {
       modelOverride: modelOverride,
     );
 
-    final effectiveClientMsgId = (clientMsgId != null && clientMsgId.isNotEmpty)
-        ? clientMsgId
-        : 'gpmai_${chatId ?? 'nochat'}_${DateTime.now().microsecondsSinceEpoch}_${math.Random().nextInt(999999)}';
+    final effectiveClientMsgId =
+        (clientMsgId != null && clientMsgId.isNotEmpty)
+            ? clientMsgId
+            : 'gpmai_${chatId ?? 'nochat'}_${DateTime.now().microsecondsSinceEpoch}_${math.Random().nextInt(999999)}';
 
     // ✅ Debug log: this is the real model id chosen before request
     print('🧠 GPMaiBrain chosenModel = $chosenModel');
@@ -97,10 +98,7 @@ class GPMaiBrain {
     final messages = <Map<String, dynamic>>[];
 
     if (systemPrompt != null && systemPrompt.trim().isNotEmpty) {
-      messages.add({
-        'role': 'system',
-        'content': systemPrompt.trim(),
-      });
+      messages.add({'role': 'system', 'content': systemPrompt.trim()});
     }
 
     if (contentParts != null && contentParts.isNotEmpty) {
@@ -109,15 +107,9 @@ class GPMaiBrain {
         ...contentParts.cast<Map<String, dynamic>>(),
       ];
 
-      messages.add({
-        'role': 'user',
-        'content': parts,
-      });
+      messages.add({'role': 'user', 'content': parts});
     } else {
-      messages.add({
-        'role': 'user',
-        'content': finalInput,
-      });
+      messages.add({'role': 'user', 'content': finalInput});
     }
 
     try {

@@ -58,10 +58,11 @@ class _DebateRoomPageState extends State<DebateRoomPage> {
     if (session == null || !mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => _DebateRoomSessionPage(
-          initialSession: session,
-          runIfNeeded: runIfNeeded,
-        ),
+        builder:
+            (_) => _DebateRoomSessionPage(
+              initialSession: session,
+              runIfNeeded: runIfNeeded,
+            ),
       ),
     );
     await _load();
@@ -71,21 +72,25 @@ class _DebateRoomPageState extends State<DebateRoomPage> {
     final ctrl = TextEditingController(text: session.title);
     final next = await showDialog<String>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Rename Debate Room session'),
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          decoration: const InputDecoration(hintText: 'Debate title'),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, ctrl.text.trim()),
-            child: const Text('Save'),
+      builder:
+          (_) => AlertDialog(
+            title: const Text('Rename Debate Room session'),
+            content: TextField(
+              controller: ctrl,
+              autofocus: true,
+              decoration: const InputDecoration(hintText: 'Debate title'),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, ctrl.text.trim()),
+                child: const Text('Save'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
     if (next == null || next.trim().isEmpty) return;
     await _store.rename(session.id, next.trim());
@@ -96,14 +101,21 @@ class _DebateRoomPageState extends State<DebateRoomPage> {
     if (sessions.isEmpty) return;
     final ok = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Delete sessions?'),
-        content: Text('Delete ${sessions.length} Debate Room session(s)?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete')),
-        ],
-      ),
+      builder:
+          (_) => AlertDialog(
+            title: const Text('Delete sessions?'),
+            content: Text('Delete ${sessions.length} Debate Room session(s)?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Delete'),
+              ),
+            ],
+          ),
     );
     if (ok != true) return;
     for (final item in sessions) {
@@ -145,32 +157,36 @@ class _DebateRoomPageState extends State<DebateRoomPage> {
 
     return AppBar(
       leading: IconButton(
-        onPressed: () => setState(() {
-          _selectionMode = false;
-          _selected.clear();
-        }),
+        onPressed:
+            () => setState(() {
+              _selectionMode = false;
+              _selected.clear();
+            }),
         icon: const Icon(Icons.close_rounded),
       ),
       title: Text('${_selected.length} selected'),
       actions: [
         IconButton(
-          onPressed: () => setState(() {
-            final visible = _sessions.map((e) => e.id).toSet();
-            if (_selected.length == visible.length) {
-              _selected.clear();
-              _selectionMode = false;
-            } else {
-              _selected
-                ..clear()
-                ..addAll(visible);
-            }
-          }),
+          onPressed:
+              () => setState(() {
+                final visible = _sessions.map((e) => e.id).toSet();
+                if (_selected.length == visible.length) {
+                  _selected.clear();
+                  _selectionMode = false;
+                } else {
+                  _selected
+                    ..clear()
+                    ..addAll(visible);
+                }
+              }),
           icon: const Icon(Icons.select_all_rounded),
           tooltip: 'Select all',
         ),
         IconButton(
           onPressed: () async {
-            final selected = _sessions.where((e) => _selected.contains(e.id)).toList(growable: false);
+            final selected = _sessions
+                .where((e) => _selected.contains(e.id))
+                .toList(growable: false);
             if (selected.length == 1) {
               await _store.togglePinned(selected.first.id);
               await _load();
@@ -180,7 +196,12 @@ class _DebateRoomPageState extends State<DebateRoomPage> {
           tooltip: 'Pin',
         ),
         IconButton(
-          onPressed: () => _deleteSessions(_sessions.where((e) => _selected.contains(e.id)).toList(growable: false)),
+          onPressed:
+              () => _deleteSessions(
+                _sessions
+                    .where((e) => _selected.contains(e.id))
+                    .toList(growable: false),
+              ),
           icon: const Icon(Icons.delete_outline_rounded),
           tooltip: 'Delete selected',
         ),
@@ -190,171 +211,226 @@ class _DebateRoomPageState extends State<DebateRoomPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bodyCard = Theme.of(context).brightness == Brightness.light ? Colors.white : const Color(0xFF0F131A);
-    final border = Theme.of(context).brightness == Brightness.light ? Colors.black12 : Colors.white12;
+    final bodyCard =
+        Theme.of(context).brightness == Brightness.light
+            ? Colors.white
+            : const Color(0xFF0F131A);
+    final border =
+        Theme.of(context).brightness == Brightness.light
+            ? Colors.black12
+            : Colors.white12;
 
     return Scaffold(
       backgroundColor: const Color(0xFF090B11),
       appBar: _appBar(),
-      floatingActionButton: _selectionMode
-          ? null
-          : FloatingActionButton.extended(
-              onPressed: _startNew,
-              icon: const Icon(Icons.play_arrow_rounded),
-              label: const Text('Start Debate'),
-            ),
+      floatingActionButton:
+          _selectionMode
+              ? null
+              : FloatingActionButton.extended(
+                onPressed: _startNew,
+                icon: const Icon(Icons.play_arrow_rounded),
+                label: const Text('Start Debate'),
+              ),
       body: SafeArea(
-        child: _loading
-            ? const Center(child: CircularProgressIndicator())
-            : RefreshIndicator(
-                onRefresh: _load,
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 110),
-                  children: [
-                    _HistoryHeroCard(onStart: _startNew),
-                    const SizedBox(height: 18),
-                    Text(
-                      'Recent sessions',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                          ),
-                    ),
-                    const SizedBox(height: 10),
-                    if (_sessions.isEmpty)
-                      Container(
-                        padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          color: bodyCard,
-                          borderRadius: BorderRadius.circular(22),
-                          border: Border.all(color: border),
+        child:
+            _loading
+                ? const Center(child: CircularProgressIndicator())
+                : RefreshIndicator(
+                  onRefresh: _load,
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 110),
+                    children: [
+                      _HistoryHeroCard(onStart: _startNew),
+                      const SizedBox(height: 18),
+                      Text(
+                        'Recent sessions',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
                         ),
-                        child: const Text(
-                          'No saved debates yet. Choose three models and watch the room build one answer together.',
-                          style: TextStyle(color: Colors.white70, height: 1.4),
-                        ),
-                      )
-                    else
-                      ..._sessions.map((session) {
-                        final selected = _selected.contains(session.id);
-                        final accent = session.participants.isEmpty
-                            ? const Color(0xFF00B8FF)
-                            : ProviderBranding.resolve(
-                                provider: session.participants.first.provider,
-                                modelId: session.participants.first.modelId,
-                                displayName: session.participants.first.displayName,
-                              ).accent;
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: InkWell(
+                      ),
+                      const SizedBox(height: 10),
+                      if (_sessions.isEmpty)
+                        Container(
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            color: bodyCard,
                             borderRadius: BorderRadius.circular(22),
-                            onLongPress: () => _toggleSelection(session.id),
-                            onTap: () {
-                              if (_selectionMode) {
-                                _toggleSelection(session.id);
-                                return;
-                              }
-                              _openSession(session.id);
-                            },
-                            child: Ink(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: bodyCard,
-                                borderRadius: BorderRadius.circular(22),
-                                border: Border.all(
-                                  color: selected ? accent.withOpacity(.7) : border,
-                                  width: selected ? 1.4 : 1,
+                            border: Border.all(color: border),
+                          ),
+                          child: const Text(
+                            'No saved debates yet. Choose three models and watch the room build one answer together.',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              height: 1.4,
+                            ),
+                          ),
+                        )
+                      else
+                        ..._sessions.map((session) {
+                          final selected = _selected.contains(session.id);
+                          final accent =
+                              session.participants.isEmpty
+                                  ? const Color(0xFF00B8FF)
+                                  : ProviderBranding.resolve(
+                                    provider:
+                                        session.participants.first.provider,
+                                    modelId: session.participants.first.modelId,
+                                    displayName:
+                                        session.participants.first.displayName,
+                                  ).accent;
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(22),
+                              onLongPress: () => _toggleSelection(session.id),
+                              onTap: () {
+                                if (_selectionMode) {
+                                  _toggleSelection(session.id);
+                                  return;
+                                }
+                                _openSession(session.id);
+                              },
+                              child: Ink(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: bodyCard,
+                                  borderRadius: BorderRadius.circular(22),
+                                  border: Border.all(
+                                    color:
+                                        selected
+                                            ? accent.withOpacity(.7)
+                                            : border,
+                                    width: selected ? 1.4 : 1,
+                                  ),
+                                  gradient: LinearGradient(
+                                    begin: Alignment.centerLeft,
+                                    end: Alignment.centerRight,
+                                    colors: [
+                                      accent.withOpacity(.14),
+                                      Colors.transparent,
+                                    ],
+                                  ),
                                 ),
-                                gradient: LinearGradient(
-                                  begin: Alignment.centerLeft,
-                                  end: Alignment.centerRight,
-                                  colors: [
-                                    accent.withOpacity(.14),
-                                    Colors.transparent,
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (_selectionMode)
+                                      Padding(
+                                        padding: const EdgeInsets.only(
+                                          right: 12,
+                                          top: 2,
+                                        ),
+                                        child: Checkbox(
+                                          value: selected,
+                                          onChanged:
+                                              (_) =>
+                                                  _toggleSelection(session.id),
+                                        ),
+                                      ),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  session.title,
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: const TextStyle(
+                                                    fontWeight: FontWeight.w900,
+                                                    fontSize: 17,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                              ),
+                                              if (session.pinned)
+                                                Icon(
+                                                  Icons.push_pin_rounded,
+                                                  size: 18,
+                                                  color: accent,
+                                                ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            session.question,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              color: Colors.white70,
+                                              height: 1.35,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 12),
+                                          Wrap(
+                                            spacing: 8,
+                                            runSpacing: 8,
+                                            children: [
+                                              _TinyPill(label: session.goal),
+                                              _TinyPill(label: session.depth),
+                                              _TinyPill(label: session.status),
+                                              ...session.participants
+                                                  .take(3)
+                                                  .map(
+                                                    (p) => _TinyPill(
+                                                      label: p.displayName,
+                                                    ),
+                                                  ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    if (!_selectionMode)
+                                      PopupMenuButton<String>(
+                                        onSelected: (value) async {
+                                          if (value == 'rename') {
+                                            await _renameSession(session);
+                                          } else if (value == 'pin') {
+                                            await _store.togglePinned(
+                                              session.id,
+                                            );
+                                            await _load();
+                                          } else if (value == 'delete') {
+                                            await _deleteSessions([session]);
+                                          }
+                                        },
+                                        itemBuilder:
+                                            (_) => [
+                                              const PopupMenuItem(
+                                                value: 'rename',
+                                                child: Text('Rename'),
+                                              ),
+                                              PopupMenuItem(
+                                                value: 'pin',
+                                                child: Text(
+                                                  session.pinned
+                                                      ? 'Unpin'
+                                                      : 'Pin',
+                                                ),
+                                              ),
+                                              const PopupMenuItem(
+                                                value: 'delete',
+                                                child: Text('Delete'),
+                                              ),
+                                            ],
+                                      ),
                                   ],
                                 ),
                               ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (_selectionMode)
-                                    Padding(
-                                      padding: const EdgeInsets.only(right: 12, top: 2),
-                                      child: Checkbox(
-                                        value: selected,
-                                        onChanged: (_) => _toggleSelection(session.id),
-                                      ),
-                                    ),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                session.title,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.w900,
-                                                  fontSize: 17,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                            ),
-                                            if (session.pinned)
-                                              Icon(Icons.push_pin_rounded, size: 18, color: accent),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          session.question,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(color: Colors.white70, height: 1.35),
-                                        ),
-                                        const SizedBox(height: 12),
-                                        Wrap(
-                                          spacing: 8,
-                                          runSpacing: 8,
-                                          children: [
-                                            _TinyPill(label: session.goal),
-                                            _TinyPill(label: session.depth),
-                                            _TinyPill(label: session.status),
-                                            ...session.participants.take(3).map((p) => _TinyPill(label: p.displayName)),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  if (!_selectionMode)
-                                    PopupMenuButton<String>(
-                                      onSelected: (value) async {
-                                        if (value == 'rename') {
-                                          await _renameSession(session);
-                                        } else if (value == 'pin') {
-                                          await _store.togglePinned(session.id);
-                                          await _load();
-                                        } else if (value == 'delete') {
-                                          await _deleteSessions([session]);
-                                        }
-                                      },
-                                      itemBuilder: (_) => [
-                                        const PopupMenuItem(value: 'rename', child: Text('Rename')),
-                                        PopupMenuItem(value: 'pin', child: Text(session.pinned ? 'Unpin' : 'Pin')),
-                                        const PopupMenuItem(value: 'delete', child: Text('Delete')),
-                                      ],
-                                    ),
-                                ],
-                              ),
                             ),
-                          ),
-                        );
-                      }),
-                  ],
+                          );
+                        }),
+                    ],
+                  ),
                 ),
-              ),
       ),
     );
   }
@@ -389,9 +465,15 @@ class _HistoryHeroCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(18),
                   color: const Color(0xFF00B8FF).withOpacity(.14),
-                  border: Border.all(color: const Color(0xFF00B8FF).withOpacity(.42)),
+                  border: Border.all(
+                    color: const Color(0xFF00B8FF).withOpacity(.42),
+                  ),
                 ),
-                child: const Icon(Icons.forum_rounded, color: Color(0xFF00B8FF), size: 28),
+                child: const Icon(
+                  Icons.forum_rounded,
+                  color: Color(0xFF00B8FF),
+                  size: 28,
+                ),
               ),
               const SizedBox(width: 14),
               const Expanded(
@@ -400,7 +482,11 @@ class _HistoryHeroCard extends StatelessWidget {
                   children: [
                     Text(
                       'Debate Room',
-                      style: TextStyle(fontSize: 27, fontWeight: FontWeight.w900, color: Colors.white),
+                      style: TextStyle(
+                        fontSize: 27,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                      ),
                     ),
                     SizedBox(height: 4),
                     Text(
@@ -450,7 +536,11 @@ class _TinyPill extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+        ),
       ),
     );
   }
@@ -471,18 +561,26 @@ class _DebateRoomSetupPageState extends State<_DebateRoomSetupPage> {
   String _depth = 'Balanced';
   final List<CuratedModel> _selected = <CuratedModel>[];
 
-  List<CuratedModel> get _supportedModels => mixedOfficialModels.where((m) => m.official).take(36).toList(growable: false);
+  List<CuratedModel> get _supportedModels {
+    final models = mixedOfficialModels.where((m) => m.official);
+    return models.take(36).toList(growable: false);
+  }
 
   List<CuratedModel> get _filteredModels {
     final q = _searchCtrl.text.trim().toLowerCase();
     if (q.isEmpty) return _supportedModels;
-    return _supportedModels.where((m) {
-      final hay = '${m.displayName} ${m.provider} ${m.description} ${m.id}'.toLowerCase();
-      return hay.contains(q);
-    }).toList(growable: false);
+    return _supportedModels
+        .where((m) {
+          final hay =
+              '${m.displayName} ${m.provider} ${m.description} ${m.id}'
+                  .toLowerCase();
+          return hay.contains(q);
+        })
+        .toList(growable: false);
   }
 
-  bool get _ready => _selected.length == 3 && _questionCtrl.text.trim().isNotEmpty;
+  bool get _ready =>
+      _selected.length == 3 && _questionCtrl.text.trim().isNotEmpty;
 
   @override
   void initState() {
@@ -512,7 +610,9 @@ class _DebateRoomSetupPageState extends State<_DebateRoomSetupPage> {
         _selected.add(model);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Choose exactly 3 models for this room.')),
+          const SnackBar(
+            content: Text('Choose exactly 3 models for this room.'),
+          ),
         );
       }
     });
@@ -531,7 +631,13 @@ class _DebateRoomSetupPageState extends State<_DebateRoomSetupPage> {
       outputStyle: _outputStyle,
       depth: _depth,
       participants: _selected
-          .map((m) => DebateRoomParticipant(modelId: m.id, displayName: m.displayName, provider: m.provider))
+          .map(
+            (m) => DebateRoomParticipant(
+              modelId: m.id,
+              displayName: m.displayName,
+              provider: m.provider,
+            ),
+          )
           .toList(growable: false),
       events: const <DebateRoomEvent>[],
       status: 'queued',
@@ -552,12 +658,21 @@ class _DebateRoomSetupPageState extends State<_DebateRoomSetupPage> {
       bottomNavigationBar: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOut,
-        padding: EdgeInsets.fromLTRB(16, 10, 16, MediaQuery.of(context).padding.bottom + 14),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          10,
+          16,
+          MediaQuery.of(context).padding.bottom + 14,
+        ),
         decoration: BoxDecoration(
           color: const Color(0xFF090B11).withOpacity(.96),
           border: const Border(top: BorderSide(color: Colors.white12)),
           boxShadow: const [
-            BoxShadow(color: Color(0x66000000), blurRadius: 24, offset: Offset(0, -6)),
+            BoxShadow(
+              color: Color(0x66000000),
+              blurRadius: 24,
+              offset: Offset(0, -6),
+            ),
           ],
         ),
         child: SafeArea(
@@ -571,10 +686,18 @@ class _DebateRoomSetupPageState extends State<_DebateRoomSetupPage> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF00B8FF), Color(0xFF8D63FF), Color(0xFF3B7DFF)],
+                    colors: [
+                      Color(0xFF00B8FF),
+                      Color(0xFF8D63FF),
+                      Color(0xFF3B7DFF),
+                    ],
                   ),
                   boxShadow: const [
-                    BoxShadow(color: Color(0x3300B8FF), blurRadius: 18, offset: Offset(0, 8)),
+                    BoxShadow(
+                      color: Color(0x3300B8FF),
+                      blurRadius: 18,
+                      offset: Offset(0, 8),
+                    ),
                   ],
                 ),
                 child: FilledButton.icon(
@@ -582,11 +705,17 @@ class _DebateRoomSetupPageState extends State<_DebateRoomSetupPage> {
                     backgroundColor: Colors.transparent,
                     shadowColor: Colors.transparent,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
                   ),
                   onPressed: _ready ? _submit : null,
                   icon: const Icon(Icons.auto_awesome_rounded),
-                  label: Text(_ready ? 'Start Debate Room' : 'Choose 3 models and add the question'),
+                  label: Text(
+                    _ready
+                        ? 'Start Debate Room'
+                        : 'Choose 3 models and add the question',
+                  ),
                 ),
               ),
             ),
@@ -603,12 +732,19 @@ class _DebateRoomSetupPageState extends State<_DebateRoomSetupPage> {
               controller: _questionCtrl,
               onSubmitWithChip: (transformedText, chipType, chipLabel) async {
                 _questionCtrl.text = transformedText;
-                _questionCtrl.selection = TextSelection.collapsed(offset: _questionCtrl.text.length);
-                if (_selected.length == 3 && transformedText.trim().isNotEmpty) {
+                _questionCtrl.selection = TextSelection.collapsed(
+                  offset: _questionCtrl.text.length,
+                );
+                if (_selected.length == 3 &&
+                    transformedText.trim().isNotEmpty) {
                   _submit(promptChipLabel: chipLabel);
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Prompt applied. Choose 3 models to start the room.')),
+                    const SnackBar(
+                      content: Text(
+                        'Prompt applied. Choose 3 models to start the room.',
+                      ),
+                    ),
                   );
                   setState(() {});
                 }
@@ -617,44 +753,64 @@ class _DebateRoomSetupPageState extends State<_DebateRoomSetupPage> {
             const SizedBox(height: 16),
             _DarkSection(
               title: 'Debate goal',
-              subtitle: 'Control how the panel behaves and what it should optimize for.',
+              subtitle:
+                  'Control how the panel behaves and what it should optimize for.',
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: ['Best answer', 'Compare options', 'Find risks', 'Challenge my thinking']
-                        .map((e) => _DarkChoiceChip(
-                              label: e,
-                              selected: _goal == e,
-                              onTap: () => setState(() => _goal = e),
-                            ))
-                        .toList(),
+                    children:
+                        [
+                              'Best answer',
+                              'Compare options',
+                              'Find risks',
+                              'Challenge my thinking',
+                            ]
+                            .map(
+                              (e) => _DarkChoiceChip(
+                                label: e,
+                                selected: _goal == e,
+                                onTap: () => setState(() => _goal = e),
+                              ),
+                            )
+                            .toList(),
                   ),
                   const SizedBox(height: 12),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: ['Action plan', 'Decision verdict', 'Teacher summary', 'Pros vs cons']
-                        .map((e) => _DarkChoiceChip(
-                              label: e,
-                              selected: _outputStyle == e,
-                              onTap: () => setState(() => _outputStyle = e),
-                            ))
-                        .toList(),
+                    children:
+                        [
+                              'Action plan',
+                              'Decision verdict',
+                              'Teacher summary',
+                              'Pros vs cons',
+                            ]
+                            .map(
+                              (e) => _DarkChoiceChip(
+                                label: e,
+                                selected: _outputStyle == e,
+                                onTap: () => setState(() => _outputStyle = e),
+                              ),
+                            )
+                            .toList(),
                   ),
                   const SizedBox(height: 12),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: ['Fast', 'Balanced', 'Deep']
-                        .map((e) => _DarkChoiceChip(
-                              label: e,
-                              selected: _depth == e,
-                              onTap: () => setState(() => _depth = e),
-                            ))
-                        .toList(),
+                    children:
+                        ['Fast', 'Balanced', 'Deep']
+                            .map(
+                              (e) => _DarkChoiceChip(
+                                label: e,
+                                selected: _depth == e,
+                                onTap: () => setState(() => _depth = e),
+                              ),
+                            )
+                            .toList(),
                   ),
                 ],
               ),
@@ -662,7 +818,8 @@ class _DebateRoomSetupPageState extends State<_DebateRoomSetupPage> {
             const SizedBox(height: 16),
             _DarkSection(
               title: 'Choose 3 models',
-              subtitle: 'The selected trio appears above and powers the whole live room.',
+              subtitle:
+                  'The selected trio appears above and powers the whole live room.',
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -670,7 +827,15 @@ class _DebateRoomSetupPageState extends State<_DebateRoomSetupPage> {
                     Wrap(
                       spacing: 10,
                       runSpacing: 10,
-                      children: _selected.map((m) => _SelectedModelChip(model: m, onRemove: () => _toggleModel(m))).toList(),
+                      children:
+                          _selected
+                              .map(
+                                (m) => _SelectedModelChip(
+                                  model: m,
+                                  onRemove: () => _toggleModel(m),
+                                ),
+                              )
+                              .toList(),
                     ),
                     const SizedBox(height: 14),
                   ],
@@ -680,7 +845,10 @@ class _DebateRoomSetupPageState extends State<_DebateRoomSetupPage> {
                     decoration: InputDecoration(
                       hintText: 'Search models',
                       hintStyle: const TextStyle(color: Colors.white38),
-                      prefixIcon: const Icon(Icons.search_rounded, color: Colors.white70),
+                      prefixIcon: const Icon(
+                        Icons.search_rounded,
+                        color: Colors.white70,
+                      ),
                       filled: true,
                       fillColor: Colors.white.withOpacity(.05),
                       border: OutlineInputBorder(
@@ -693,7 +861,10 @@ class _DebateRoomSetupPageState extends State<_DebateRoomSetupPage> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(18),
-                        borderSide: const BorderSide(color: Color(0xFF00B8FF), width: 1.2),
+                        borderSide: const BorderSide(
+                          color: Color(0xFF00B8FF),
+                          width: 1.2,
+                        ),
                       ),
                     ),
                   ),
@@ -740,7 +911,11 @@ class _SetupHeroCard extends StatelessWidget {
         children: [
           Text(
             'Build the room carefully',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white),
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
+            ),
           ),
           SizedBox(height: 8),
           Text(
@@ -755,7 +930,12 @@ class _SetupHeroCard extends StatelessWidget {
 
 class _QuestionSection extends StatelessWidget {
   final TextEditingController controller;
-  final Future<void> Function(String transformedText, String chipType, String chipLabel)? onSubmitWithChip;
+  final Future<void> Function(
+    String transformedText,
+    String chipType,
+    String chipLabel,
+  )?
+  onSubmitWithChip;
   const _QuestionSection({required this.controller, this.onSubmitWithChip});
 
   @override
@@ -776,7 +956,11 @@ class _QuestionSection extends StatelessWidget {
         children: [
           const Text(
             'Main question',
-            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.white),
+            style: TextStyle(
+              fontWeight: FontWeight.w900,
+              fontSize: 18,
+              color: Colors.white,
+            ),
           ),
           const SizedBox(height: 8),
           const Text(
@@ -790,7 +974,11 @@ class _QuestionSection extends StatelessWidget {
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0x2812C6FF), Color(0x228D63FF), Color(0x16090B11)],
+                colors: [
+                  Color(0x2812C6FF),
+                  Color(0x228D63FF),
+                  Color(0x16090B11),
+                ],
               ),
               border: Border.all(color: Colors.white12),
             ),
@@ -800,7 +988,8 @@ class _QuestionSection extends StatelessWidget {
               maxLines: 7,
               style: const TextStyle(color: Colors.white, height: 1.4),
               decoration: InputDecoration(
-                hintText: 'Should I ship my AI app smaller first, or go broader and accept more backend complexity now?',
+                hintText:
+                    'Should I ship my AI app smaller first, or go broader and accept more backend complexity now?',
                 hintStyle: const TextStyle(color: Colors.white38, height: 1.4),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(22),
@@ -816,8 +1005,14 @@ class _QuestionSection extends StatelessWidget {
             screenContext: 'debate',
             onSend: (transformedText, chipType, chipLabel) async {
               controller.text = transformedText;
-              controller.selection = TextSelection.collapsed(offset: controller.text.length);
-              await onSubmitWithChip?.call(transformedText, chipType, chipLabel);
+              controller.selection = TextSelection.collapsed(
+                offset: controller.text.length,
+              );
+              await onSubmitWithChip?.call(
+                transformedText,
+                chipType,
+                chipLabel,
+              );
             },
           ),
         ],
@@ -831,7 +1026,11 @@ class _DarkSection extends StatelessWidget {
   final String subtitle;
   final Widget child;
 
-  const _DarkSection({required this.title, required this.subtitle, required this.child});
+  const _DarkSection({
+    required this.title,
+    required this.subtitle,
+    required this.child,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -845,9 +1044,19 @@ class _DarkSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.white)),
+          Text(
+            title,
+            style: const TextStyle(
+              fontWeight: FontWeight.w900,
+              fontSize: 18,
+              color: Colors.white,
+            ),
+          ),
           const SizedBox(height: 6),
-          Text(subtitle, style: const TextStyle(color: Colors.white70, height: 1.4)),
+          Text(
+            subtitle,
+            style: const TextStyle(color: Colors.white70, height: 1.4),
+          ),
           const SizedBox(height: 14),
           child,
         ],
@@ -861,7 +1070,11 @@ class _DarkChoiceChip extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
-  const _DarkChoiceChip({required this.label, required this.selected, required this.onTap});
+  const _DarkChoiceChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -873,11 +1086,16 @@ class _DarkChoiceChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(999),
-          gradient: selected
-              ? const LinearGradient(colors: [Color(0xFF12C6FF), Color(0xFF8D63FF)])
-              : null,
+          gradient:
+              selected
+                  ? const LinearGradient(
+                    colors: [Color(0xFF12C6FF), Color(0xFF8D63FF)],
+                  )
+                  : null,
           color: selected ? null : Colors.white.withOpacity(.05),
-          border: Border.all(color: selected ? Colors.transparent : Colors.white12),
+          border: Border.all(
+            color: selected ? Colors.transparent : Colors.white12,
+          ),
         ),
         child: Text(
           label,
@@ -899,7 +1117,11 @@ class _SelectedModelChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final brand = ProviderBranding.resolve(provider: model.provider, modelId: model.id, displayName: model.displayName);
+    final brand = ProviderBranding.resolve(
+      provider: model.provider,
+      modelId: model.id,
+      displayName: model.displayName,
+    );
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
       decoration: BoxDecoration(
@@ -918,11 +1140,23 @@ class _SelectedModelChip extends StatelessWidget {
               color: brand.iconFill(Brightness.dark),
             ),
             child: Center(
-              child: Text(brand.initials(model.provider), style: TextStyle(color: brand.accent, fontWeight: FontWeight.w900)),
+              child: Text(
+                brand.initials(model.provider),
+                style: TextStyle(
+                  color: brand.accent,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
             ),
           ),
           const SizedBox(width: 10),
-          Text(model.displayName, style: const TextStyle(fontWeight: FontWeight.w800, color: Colors.white)),
+          Text(
+            model.displayName,
+            style: const TextStyle(
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+            ),
+          ),
           const SizedBox(width: 8),
           GestureDetector(
             onTap: onRemove,
@@ -939,11 +1173,19 @@ class _ModelPickTile extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
-  const _ModelPickTile({required this.model, required this.selected, required this.onTap});
+  const _ModelPickTile({
+    required this.model,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final brand = ProviderBranding.resolve(provider: model.provider, modelId: model.id, displayName: model.displayName);
+    final brand = ProviderBranding.resolve(
+      provider: model.provider,
+      modelId: model.id,
+      displayName: model.displayName,
+    );
     return InkWell(
       borderRadius: BorderRadius.circular(20),
       onTap: onTap,
@@ -952,7 +1194,9 @@ class _ModelPickTile extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           gradient: LinearGradient(colors: brand.cardGradient(Brightness.dark)),
-          border: Border.all(color: selected ? brand.border(Brightness.dark) : Colors.white12),
+          border: Border.all(
+            color: selected ? brand.border(Brightness.dark) : Colors.white12,
+          ),
         ),
         child: Row(
           children: [
@@ -965,7 +1209,13 @@ class _ModelPickTile extends StatelessWidget {
                 border: Border.all(color: brand.border(Brightness.dark)),
               ),
               child: Center(
-                child: Text(brand.initials(model.provider), style: TextStyle(color: brand.accent, fontWeight: FontWeight.w900)),
+                child: Text(
+                  brand.initials(model.provider),
+                  style: TextStyle(
+                    color: brand.accent,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
               ),
             ),
             const SizedBox(width: 12),
@@ -973,14 +1223,25 @@ class _ModelPickTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(model.displayName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
+                  Text(
+                    model.displayName,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text(model.provider, style: const TextStyle(color: Colors.white70)),
+                  Text(
+                    model.provider,
+                    style: const TextStyle(color: Colors.white70),
+                  ),
                 ],
               ),
             ),
             Icon(
-              selected ? Icons.check_circle_rounded : Icons.add_circle_outline_rounded,
+              selected
+                  ? Icons.check_circle_rounded
+                  : Icons.add_circle_outline_rounded,
               color: selected ? brand.accent : Colors.white54,
             ),
           ],
@@ -994,7 +1255,10 @@ class _DebateRoomSessionPage extends StatefulWidget {
   final DebateRoomSession initialSession;
   final bool runIfNeeded;
 
-  const _DebateRoomSessionPage({required this.initialSession, required this.runIfNeeded});
+  const _DebateRoomSessionPage({
+    required this.initialSession,
+    required this.runIfNeeded,
+  });
 
   @override
   State<_DebateRoomSessionPage> createState() => _DebateRoomSessionPageState();
@@ -1007,7 +1271,8 @@ class _DebateRoomSessionPageState extends State<_DebateRoomSessionPage> {
   bool _running = false;
   Timer? _ticker;
 
-  int get _interventionsUsed => _session.events.where((e) => e.type == 'user_intervention').length;
+  int get _interventionsUsed =>
+      _session.events.where((e) => e.type == 'user_intervention').length;
   bool get _canIntervene => _session.liveWindowOpen && _interventionsUsed < 2;
 
   @override
@@ -1027,16 +1292,20 @@ class _DebateRoomSessionPageState extends State<_DebateRoomSessionPage> {
     super.dispose();
   }
 
-
   Future<void> _saveToCanvas() async {
     if ((_session.finalSummary ?? '').trim().isEmpty) return;
     final transcript = _session.events
         .where((e) => e.type != 'system' && e.content.trim().isNotEmpty)
-        .map((e) => <String, dynamic>{
-              'speaker': e.type == 'moderator' ? 'Moderator' : (e.modelName ?? e.provider ?? 'Panelist'),
-              'stage': e.stage,
-              'content': e.content,
-            })
+        .map(
+          (e) => <String, dynamic>{
+            'speaker':
+                e.type == 'moderator'
+                    ? 'Moderator'
+                    : (e.modelName ?? e.provider ?? 'Panelist'),
+            'stage': e.stage,
+            'content': e.content,
+          },
+        )
         .toList(growable: false);
     await SaveToCanvasSheet.open(
       context,
@@ -1142,68 +1411,87 @@ class _DebateRoomSessionPageState extends State<_DebateRoomSessionPage> {
             ),
         ],
       ),
-      bottomNavigationBar: _session.liveWindowOpen
-          ? Container(
-              padding: EdgeInsets.fromLTRB(14, 10, 14, MediaQuery.of(context).padding.bottom + 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF090B11).withOpacity(.97),
-                border: const Border(top: BorderSide(color: Colors.white12)),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      _LiveChip(label: 'LIVE ${_liveCountdownText()}'),
-                      const SizedBox(width: 10),
-                      Text(
-                        '${2 - _interventionsUsed} corrections left',
-                        style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w700),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _interventionCtrl,
-                          enabled: _canIntervene,
-                          style: const TextStyle(color: Colors.white),
-                          decoration: InputDecoration(
-                            hintText: _canIntervene ? 'Focus the panel a little…' : 'No more corrections left',
-                            hintStyle: const TextStyle(color: Colors.white38),
-                            filled: true,
-                            fillColor: Colors.white.withOpacity(.06),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(18),
-                              borderSide: const BorderSide(color: Colors.white12),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(18),
-                              borderSide: const BorderSide(color: Colors.white12),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(18),
-                              borderSide: const BorderSide(color: Color(0xFF00B8FF), width: 1.1),
+      bottomNavigationBar:
+          _session.liveWindowOpen
+              ? Container(
+                padding: EdgeInsets.fromLTRB(
+                  14,
+                  10,
+                  14,
+                  MediaQuery.of(context).padding.bottom + 12,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF090B11).withOpacity(.97),
+                  border: const Border(top: BorderSide(color: Colors.white12)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        _LiveChip(label: 'LIVE ${_liveCountdownText()}'),
+                        const SizedBox(width: 10),
+                        Text(
+                          '${2 - _interventionsUsed} corrections left',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _interventionCtrl,
+                            enabled: _canIntervene,
+                            style: const TextStyle(color: Colors.white),
+                            decoration: InputDecoration(
+                              hintText:
+                                  _canIntervene
+                                      ? 'Focus the panel a little…'
+                                      : 'No more corrections left',
+                              hintStyle: const TextStyle(color: Colors.white38),
+                              filled: true,
+                              fillColor: Colors.white.withOpacity(.06),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(18),
+                                borderSide: const BorderSide(
+                                  color: Colors.white12,
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(18),
+                                borderSide: const BorderSide(
+                                  color: Colors.white12,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(18),
+                                borderSide: const BorderSide(
+                                  color: Color(0xFF00B8FF),
+                                  width: 1.1,
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      SizedBox(
-                        height: 52,
-                        child: FilledButton(
-                          onPressed: _canIntervene ? _sendIntervention : null,
-                          child: const Text('Send'),
+                        const SizedBox(width: 10),
+                        SizedBox(
+                          height: 52,
+                          child: FilledButton(
+                            onPressed: _canIntervene ? _sendIntervention : null,
+                            child: const Text('Send'),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            )
-          : null,
+                      ],
+                    ),
+                  ],
+                ),
+              )
+              : null,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
@@ -1211,9 +1499,13 @@ class _DebateRoomSessionPageState extends State<_DebateRoomSessionPage> {
             _SessionHero(session: _session, liveLabel: _liveCountdownText()),
             const SizedBox(height: 14),
             ..._buildEventBlocks(),
-            if (_session.status == 'completed' && (_session.finalSummary ?? '').trim().isNotEmpty) ...[
+            if (_session.status == 'completed' &&
+                (_session.finalSummary ?? '').trim().isNotEmpty) ...[
               const SizedBox(height: 12),
-              _FinalSummaryCard(summary: _session.finalSummary!, responseId: 'debate_final_${_session.id}'),
+              _FinalSummaryCard(
+                summary: _session.finalSummary!,
+                responseId: 'debate_final_${_session.id}',
+              ),
             ],
           ],
         ),
@@ -1241,7 +1533,10 @@ class _DebateRoomSessionPageState extends State<_DebateRoomSessionPage> {
         widgets.add(
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
-            child: _ModeratorEventCard(content: event.content, responseId: event.id),
+            child: _ModeratorEventCard(
+              content: event.content,
+              responseId: event.id,
+            ),
           ),
         );
         continue;
@@ -1257,16 +1552,22 @@ class _DebateRoomSessionPageState extends State<_DebateRoomSessionPage> {
       }
       final participant = _session.participants.firstWhere(
         (p) => p.modelId == event.modelId,
-        orElse: () => DebateRoomParticipant(
-          modelId: event.modelId ?? '',
-          displayName: event.modelName ?? 'Panelist',
-          provider: event.provider ?? '',
-        ),
+        orElse:
+            () => DebateRoomParticipant(
+              modelId: event.modelId ?? '',
+              displayName: event.modelName ?? 'Panelist',
+              provider: event.provider ?? '',
+            ),
       );
       widgets.add(
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: _ParticipantEventCard(participant: participant, content: event.content, stage: event.stage, responseId: event.id),
+          child: _ParticipantEventCard(
+            participant: participant,
+            content: event.content,
+            stage: event.stage,
+            responseId: event.id,
+          ),
         ),
       );
     }
@@ -1275,7 +1576,12 @@ class _DebateRoomSessionPageState extends State<_DebateRoomSessionPage> {
         (p) => p.modelId == _session.activeModelId,
         orElse: () => _session.participants.first,
       );
-      widgets.add(_TypingParticipantCard(participant: participant, liveMode: _session.liveWindowOpen));
+      widgets.add(
+        _TypingParticipantCard(
+          participant: participant,
+          liveMode: _session.liveWindowOpen,
+        ),
+      );
     }
     return widgets;
   }
@@ -1308,7 +1614,12 @@ class _SessionHero extends StatelessWidget {
               Expanded(
                 child: Text(
                   session.question,
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, height: 1.24, color: Colors.white),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    height: 1.24,
+                    color: Colors.white,
+                  ),
                 ),
               ),
               if (session.liveWindowOpen) _LiveChip(label: 'LIVE $liveLabel'),
@@ -1329,21 +1640,34 @@ class _SessionHero extends StatelessWidget {
           Wrap(
             spacing: 10,
             runSpacing: 10,
-            children: session.participants.map((p) {
-              final brand = ProviderBranding.resolve(provider: p.provider, modelId: p.modelId, displayName: p.displayName);
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(999),
-                  gradient: LinearGradient(colors: brand.vividGradient(Brightness.dark)),
-                  border: Border.all(color: brand.border(Brightness.dark)),
-                ),
-                child: Text(
-                  p.displayName,
-                  style: const TextStyle(fontWeight: FontWeight.w800, color: Colors.white),
-                ),
-              );
-            }).toList(),
+            children:
+                session.participants.map((p) {
+                  final brand = ProviderBranding.resolve(
+                    provider: p.provider,
+                    modelId: p.modelId,
+                    displayName: p.displayName,
+                  );
+                  return Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(999),
+                      gradient: LinearGradient(
+                        colors: brand.vividGradient(Brightness.dark),
+                      ),
+                      border: Border.all(color: brand.border(Brightness.dark)),
+                    ),
+                    child: Text(
+                      p.displayName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+                  );
+                }).toList(),
           ),
         ],
       ),
@@ -1361,7 +1685,9 @@ class _LiveChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(999),
-        gradient: const LinearGradient(colors: [Color(0xFFFF5B5B), Color(0xFF8D63FF)]),
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFF5B5B), Color(0xFF8D63FF)],
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1369,10 +1695,19 @@ class _LiveChip extends StatelessWidget {
           Container(
             width: 8,
             height: 8,
-            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
           ),
           const SizedBox(width: 8),
-          Text(label, style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.white)),
+          Text(
+            label,
+            style: const TextStyle(
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
+            ),
+          ),
         ],
       ),
     );
@@ -1400,9 +1735,19 @@ class _StageBanner extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white)),
+          Text(
+            title,
+            style: const TextStyle(
+              fontWeight: FontWeight.w900,
+              fontSize: 16,
+              color: Colors.white,
+            ),
+          ),
           const SizedBox(height: 6),
-          Text(subtitle, style: const TextStyle(color: Colors.white70, height: 1.35)),
+          Text(
+            subtitle,
+            style: const TextStyle(color: Colors.white70, height: 1.35),
+          ),
         ],
       ),
     );
@@ -1420,7 +1765,13 @@ class _StageHeader extends StatelessWidget {
         Expanded(child: Divider(color: Colors.white24)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Text(label, style: const TextStyle(fontWeight: FontWeight.w800, color: Colors.white70)),
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontWeight: FontWeight.w800,
+              color: Colors.white70,
+            ),
+          ),
         ),
         Expanded(child: Divider(color: Colors.white24)),
       ],
@@ -1434,19 +1785,36 @@ class _ParticipantEventCard extends StatelessWidget {
   final String stage;
   final String responseId;
 
-  const _ParticipantEventCard({required this.participant, required this.content, required this.stage, required this.responseId});
+  const _ParticipantEventCard({
+    required this.participant,
+    required this.content,
+    required this.stage,
+    required this.responseId,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final brand = ProviderBranding.resolve(provider: participant.provider, modelId: participant.modelId, displayName: participant.displayName);
+    final brand = ProviderBranding.resolve(
+      provider: participant.provider,
+      modelId: participant.modelId,
+      displayName: participant.displayName,
+    );
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
-        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: brand.vividGradient(Brightness.dark)),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: brand.vividGradient(Brightness.dark),
+        ),
         border: Border.all(color: brand.border(Brightness.dark), width: 1.2),
         boxShadow: [
-          BoxShadow(color: brand.accent.withOpacity(.10), blurRadius: 18, offset: const Offset(0, 6)),
+          BoxShadow(
+            color: brand.accent.withOpacity(.10),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
         ],
       ),
       child: Column(
@@ -1465,7 +1833,10 @@ class _ParticipantEventCard extends StatelessWidget {
                 child: Center(
                   child: Text(
                     brand.initials(participant.provider),
-                    style: TextStyle(color: brand.accent, fontWeight: FontWeight.w900),
+                    style: TextStyle(
+                      color: brand.accent,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
               ),
@@ -1474,29 +1845,54 @@ class _ParticipantEventCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(participant.displayName, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white)),
+                    Text(
+                      participant.displayName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 16,
+                        color: Colors.white,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text(participant.provider, style: TextStyle(color: brand.mutedText(Brightness.dark))),
+                    Text(
+                      participant.provider,
+                      style: TextStyle(color: brand.mutedText(Brightness.dark)),
+                    ),
                   ],
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 7,
+                ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(999),
                   color: brand.accent.withOpacity(.18),
                 ),
                 child: Text(
                   stage,
-                  style: TextStyle(color: brand.accent, fontWeight: FontWeight.w800, fontSize: 12),
+                  style: TextStyle(
+                    color: brand.accent,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 12,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 14),
-          MarkdownBubble(text: content, textColor: Colors.white, linkColor: brand.accent),
+          MarkdownBubble(
+            text: content,
+            textColor: Colors.white,
+            linkColor: brand.accent,
+          ),
           const SizedBox(height: 12),
-          CitationBuilderPanel(responseText: content, responseId: responseId, accentColor: brand.accent),
+          CitationBuilderPanel(
+            responseText: content,
+            responseId: responseId,
+            accentColor: brand.accent,
+          ),
         ],
       ),
     );
@@ -1532,28 +1928,53 @@ class _ModeratorEventCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(14),
                   color: const Color(0xFF00B8FF).withOpacity(.14),
-                  border: Border.all(color: const Color(0xFF00B8FF).withOpacity(.36)),
+                  border: Border.all(
+                    color: const Color(0xFF00B8FF).withOpacity(.36),
+                  ),
                 ),
-                child: const Icon(Icons.record_voice_over_rounded, color: Color(0xFF00B8FF)),
+                child: const Icon(
+                  Icons.record_voice_over_rounded,
+                  color: Color(0xFF00B8FF),
+                ),
               ),
               const SizedBox(width: 12),
               const Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Moderator', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white)),
+                    Text(
+                      'Moderator',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 16,
+                        color: Colors.white,
+                      ),
+                    ),
                     SizedBox(height: 4),
-                    Text('Guiding the room, not debating', style: TextStyle(color: Colors.white70)),
+                    Text(
+                      'Guiding the room, not debating',
+                      style: TextStyle(color: Colors.white70),
+                    ),
                   ],
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 7,
+                ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(999),
                   color: const Color(0xFF00B8FF).withOpacity(.12),
                 ),
-                child: const Text('Summary', style: TextStyle(color: Color(0xFF00B8FF), fontWeight: FontWeight.w800, fontSize: 12)),
+                child: const Text(
+                  'Summary',
+                  style: TextStyle(
+                    color: Color(0xFF00B8FF),
+                    fontWeight: FontWeight.w800,
+                    fontSize: 12,
+                  ),
+                ),
               ),
             ],
           ),
@@ -1563,9 +1984,17 @@ class _ModeratorEventCard extends StatelessWidget {
             style: TextStyle(color: Colors.white70, height: 1.45),
           ),
           const SizedBox(height: 12),
-          MarkdownBubble(text: content, textColor: Colors.white, linkColor: const Color(0xFF00B8FF)),
+          MarkdownBubble(
+            text: content,
+            textColor: Colors.white,
+            linkColor: const Color(0xFF00B8FF),
+          ),
           const SizedBox(height: 12),
-          CitationBuilderPanel(responseText: content, responseId: responseId, accentColor: const Color(0xFF00B8FF)),
+          CitationBuilderPanel(
+            responseText: content,
+            responseId: responseId,
+            accentColor: const Color(0xFF00B8FF),
+          ),
         ],
       ),
     );
@@ -1591,9 +2020,18 @@ class _UserInterventionCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            const Text('Your correction', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w800)),
+            const Text(
+              'Your correction',
+              style: TextStyle(
+                color: Colors.white70,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
             const SizedBox(height: 8),
-            Text(content, style: const TextStyle(color: Colors.white, height: 1.42)),
+            Text(
+              content,
+              style: const TextStyle(color: Colors.white, height: 1.42),
+            ),
           ],
         ),
       ),
@@ -1605,13 +2043,17 @@ class _TypingParticipantCard extends StatefulWidget {
   final DebateRoomParticipant participant;
   final bool liveMode;
 
-  const _TypingParticipantCard({required this.participant, required this.liveMode});
+  const _TypingParticipantCard({
+    required this.participant,
+    required this.liveMode,
+  });
 
   @override
   State<_TypingParticipantCard> createState() => _TypingParticipantCardState();
 }
 
-class _TypingParticipantCardState extends State<_TypingParticipantCard> with SingleTickerProviderStateMixin {
+class _TypingParticipantCardState extends State<_TypingParticipantCard>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 900),
@@ -1640,7 +2082,13 @@ class _TypingParticipantCardState extends State<_TypingParticipantCard> with Sin
       ),
       child: Row(
         children: [
-          Text(widget.participant.displayName, style: const TextStyle(fontWeight: FontWeight.w800, color: Colors.white)),
+          Text(
+            widget.participant.displayName,
+            style: const TextStyle(
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+            ),
+          ),
           const SizedBox(width: 12),
           AnimatedBuilder(
             animation: _controller,
@@ -1656,7 +2104,10 @@ class _TypingParticipantCardState extends State<_TypingParticipantCard> with Sin
                       child: Container(
                         width: 8,
                         height: 8,
-                        decoration: BoxDecoration(shape: BoxShape.circle, color: brand.accent),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: brand.accent,
+                        ),
                       ),
                     ),
                   );
@@ -1700,13 +2151,28 @@ class _FinalSummaryCard extends StatelessWidget {
             children: [
               Icon(Icons.auto_awesome_rounded, color: Color(0xFF00B8FF)),
               SizedBox(width: 10),
-              Text('Final Answer', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 19, color: Colors.white)),
+              Text(
+                'Final Answer',
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 19,
+                  color: Colors.white,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 14),
-          MarkdownBubble(text: summary, textColor: Colors.white, linkColor: const Color(0xFF00B8FF)),
+          MarkdownBubble(
+            text: summary,
+            textColor: Colors.white,
+            linkColor: const Color(0xFF00B8FF),
+          ),
           const SizedBox(height: 12),
-          CitationBuilderPanel(responseText: summary, responseId: responseId, accentColor: const Color(0xFF00B8FF)),
+          CitationBuilderPanel(
+            responseText: summary,
+            responseId: responseId,
+            accentColor: const Color(0xFF00B8FF),
+          ),
         ],
       ),
     );
